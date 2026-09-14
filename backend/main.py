@@ -137,3 +137,37 @@ def sign_in(data: SignInInput):
         "session": response.session,
     }
 
+
+# ---- Auth verification (for protecting endpoints) ----
+
+from fastapi import Header, HTTPException
+
+def get_current_user(authorization: str = Header(...)):
+    """
+    Expects header: Authorization: Bearer <access_token>
+    Returns the authenticated user's info, or raises 401 if invalid.
+    """
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+    token = authorization.replace("Bearer ", "")
+
+    try:
+        user_response = supabase.auth.get_user(token)
+        if not user_response or not user_response.user:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        return user_response.user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+# Example protected route to test it
+from fastapi import Depends
+
+@app.get("/me")
+def get_my_profile(current_user = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+    }
+
