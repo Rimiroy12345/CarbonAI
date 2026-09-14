@@ -100,3 +100,40 @@ def calculate_footprint(data: EmissionInput):
         "category_totals": category_totals,
         "breakdown_pct": breakdown_pct,
     }
+
+
+
+# ---- Auth ----
+
+class SignUpInput(BaseModel):
+    email: str
+    password: str
+
+class SignInInput(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/auth/signup")
+def sign_up(data: SignUpInput):
+    response = supabase.auth.sign_up({
+        "email": data.email,
+        "password": data.password,
+    })
+    return {
+        "user": response.user,
+        "session": response.session,
+    }
+
+
+@app.post("/auth/signin")
+def sign_in(data: SignInInput):
+    response = supabase.auth.sign_in_with_password({
+        "email": data.email,
+        "password": data.password,
+    })
+    return {
+        "user": response.user,
+        "session": response.session,
+    }
+
