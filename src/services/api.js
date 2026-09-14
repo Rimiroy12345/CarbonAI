@@ -1,5 +1,4 @@
-const BASE_URL = 'https://carbonai-backend.onrender.com';
-
+const BASE_URL = '';
 const getHeaders = () => {
   const token = localStorage.getItem('token');
   return {
