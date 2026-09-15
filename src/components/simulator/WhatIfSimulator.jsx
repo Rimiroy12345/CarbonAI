@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import React, { useState, useEffect } from 'react';
 import Slider from './Slider';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { runWhatIfSimulation } from '../../services/api';
 
 export default function WhatIfSimulator({ companyId, baseline }) {
   const [renewableMix, setRenewableMix] = useState(0);
   const [travelReduction, setTravelReduction] = useState(0);
   const [wasteRecycling, setWasteRecycling] = useState(0);
 
+  // Client-side instant baseline fallbacks
   const energyBaseline = baseline?.energy_kg || 5000;
   const travelBaseline = baseline?.travel_kg || 2000;
   const wasteBaseline = baseline?.waste_kg || 1000;
 
+  // Local calculation for immediate UI preview
   const simulatedEnergy = energyBaseline * (1 - renewableMix / 100);
   const simulatedTravel = travelBaseline * (1 - travelReduction / 100);
   const simulatedWaste = wasteBaseline * (1 - wasteRecycling / 100);
@@ -20,6 +22,29 @@ export default function WhatIfSimulator({ companyId, baseline }) {
   const totalBaseline = energyBaseline + travelBaseline + wasteBaseline;
   const totalSimulated = simulatedEnergy + simulatedTravel + simulatedWaste;
   const totalSaved = totalBaseline - totalSimulated;
+
+  // Sync simulation payload with the live backend
+  useEffect(() => {
+    const syncSimulationWithBackend = async () => {
+      try {
+        await runWhatIfSimulation({
+          companyId,
+          renewableMix,
+          travelReduction,
+          wasteRecycling,
+          totalSaved,
+        });
+      } catch (error) {
+        console.error("Backend simulation sync failed, using local preview state:", error);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      syncSimulationWithBackend();
+    }, 400); // 400ms debounce to avoid spamming network calls on rapid slider drag
+
+    return () => clearTimeout(timer);
+  }, [renewableMix, travelReduction, wasteRecycling, companyId, totalSaved]);
 
   const chartData = [
     { category: 'Energy', Baseline: energyBaseline, Simulated: simulatedEnergy },

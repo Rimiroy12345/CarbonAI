@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import api, { getDashboardResults } from '../services/api';
 import WhatIfSimulator from '../components/simulator/WhatIfSimulator';
 import ActionPlanList from '../components/recommendations/ActionPlanList';
 
@@ -10,7 +10,7 @@ export default function Dashboard({ companyId = "demo-company" }) {
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const results = await api.getResults(companyId);
+        const results = await getDashboardResults();
         setData(results);
       } catch (err) {
         setData({
