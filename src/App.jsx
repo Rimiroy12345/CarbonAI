@@ -1,4 +1,4 @@
-import { api } from './services/api';
+import { submitAssessment, getDashboardResults } from './services/api';
 import React, { useState } from 'react';
 import Dashboard from './pages/Dashboard';
 import carbonAIImage from "./assets/carbon-ai.png";
@@ -85,7 +85,7 @@ export default function App() {
   };
 
   try {
-    const res = await api.submitAssessment(payload);
+    const res = await submitAssessment(payload);
     
     // Checks for either response format from backend
     if (res && (res.recommendation || res.aiRecommendation)) {
