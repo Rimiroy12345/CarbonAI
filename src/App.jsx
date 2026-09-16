@@ -217,13 +217,7 @@ export default function App() {
                       Get started <span>→</span>
                     </button>
 
-                    <button
-                     type="button"
-                     className="carbonai-primary"
-                     onClick={() => setStep(2)}
-                    >
-                      Get started <span>→</span>
-                    </button>
+                    
                   </div>
 
                   <div className="carbonai-stats">
