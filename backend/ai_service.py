@@ -49,3 +49,19 @@ Provide:
 Keep the recommendations practical, measurable, and relevant to
 the company's industry and reported emissions.
 """
+def generate_action_plan(
+    company_name: str,
+    industry: str,
+    scope1: float,
+    scope2: float,
+    scope3: float,
+) -> str:
+    prompt = build_action_plan_prompt(
+        company_name=company_name,
+        industry=industry,
+        scope1=scope1,
+        scope2=scope2,
+        scope3=scope3,
+    )
+
+    return generate_ai_response(prompt)
