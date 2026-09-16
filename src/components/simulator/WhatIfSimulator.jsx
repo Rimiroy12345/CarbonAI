@@ -53,15 +53,60 @@ export default function WhatIfSimulator({ companyId, baseline }) {
     { category: 'Waste', Baseline: wasteBaseline, Simulated: simulatedWaste },
   ];
 
-  const exportPDF = async () => {
-    const element = document.getElementById('simulator-report');
-    if (!element) return;
-    const canvas = await html2canvas(element);
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    pdf.addImage(imgData, 'PNG', 10, 10, 190, 0);
-    pdf.save('CarbonAI_Simulation_Report.pdf');
-  };
+ const exportPDF = async () => {
+  const element = document.getElementById('simulator-report');
+  if (!element) return;
+
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+  });
+
+  const imgData = canvas.toDataURL('image/png');
+
+  const pdf = new jsPDF('p', 'mm', 'a4');
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const margin = 10;
+  const contentWidth = pageWidth - margin * 2;
+  const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+  let heightLeft = contentHeight;
+  let position = margin;
+
+  pdf.addImage(
+    imgData,
+    'PNG',
+    margin,
+    position,
+    contentWidth,
+    contentHeight
+  );
+
+  heightLeft -= pageHeight - margin * 2;
+
+  while (heightLeft > 0) {
+    position = margin - (contentHeight - heightLeft);
+
+    pdf.addPage();
+
+    pdf.addImage(
+      imgData,
+      'PNG',
+      margin,
+      position,
+      contentWidth,
+      contentHeight
+    );
+
+    heightLeft -= pageHeight - margin * 2;
+  }
+
+  pdf.save('CarbonAI_Simulation_Report.pdf');
+};
 
    return (
     <div
