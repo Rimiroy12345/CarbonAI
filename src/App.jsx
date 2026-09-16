@@ -217,9 +217,12 @@ export default function App() {
                       Get started <span>→</span>
                     </button>
 
-                    <button type="button" className="carbonai-watch">
-                      <span className="carbonai-play">▶</span>
-                      Watch video
+                    <button
+                     type="button"
+                     className="carbonai-primary"
+                     onClick={() => setStep(2)}
+                    >
+                      Get started <span>→</span>
                     </button>
                   </div>
 
