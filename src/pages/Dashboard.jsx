@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getDashboardResults, submitAssessment, runWhatIfSimulation } from '../services/api';
 import WhatIfSimulator from '../components/simulator/WhatIfSimulator';
 import ActionPlanList from '../components/recommendations/ActionPlanList';
-import { ResponsiveContainer } from 'recharts';
+import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip } from 'recharts';
 
 export default function Dashboard({ companyId = "demo-company" }) {
   const [data, setData] = useState(null);
