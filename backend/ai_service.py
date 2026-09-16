@@ -18,3 +18,34 @@ def generate_ai_response(prompt: str) -> str:
     )
 
     return response.text.strip()
+def build_action_plan_prompt(
+    company_name: str,
+    industry: str,
+    scope1: float,
+    scope2: float,
+    scope3: float,
+) -> str:
+    return f"""
+You are CarbonAI, an AI sustainability advisor.
+
+Analyze this company's carbon emissions and create a practical,
+industry-specific carbon reduction action plan.
+
+Company: {company_name}
+Industry: {industry}
+
+Scope 1 emissions: {scope1} tCO2e
+Scope 2 emissions: {scope2} tCO2e
+Scope 3 emissions: {scope3} tCO2e
+
+Provide:
+1. Key emission areas to address
+2. Specific reduction actions
+3. Priority of each action
+4. Expected environmental impact
+5. Short-term actions
+6. Long-term actions
+
+Keep the recommendations practical, measurable, and relevant to
+the company's industry and reported emissions.
+"""
