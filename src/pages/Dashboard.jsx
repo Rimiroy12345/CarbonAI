@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api, { getDashboardResults } from '../services/api';
+import { getDashboardResults, submitAssessment, runWhatIfSimulation } from '../services/api';
 import WhatIfSimulator from '../components/simulator/WhatIfSimulator';
 import ActionPlanList from '../components/recommendations/ActionPlanList';
 
