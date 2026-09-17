@@ -23,9 +23,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// --------------------------------------------------
-// AUTH - SIGN IN
-// --------------------------------------------------
 export const signIn = async (email, password) => {
   try {
     const response = await api.post('/auth/signin', { email, password });
@@ -50,9 +47,6 @@ export const signIn = async (email, password) => {
   }
 };
 
-// --------------------------------------------------
-// AUTH - SIGN UP
-// --------------------------------------------------
 export const signUp = async (email, password) => {
   try {
     const response = await api.post('/auth/signup', { email, password });
@@ -78,22 +72,13 @@ export const signUp = async (email, password) => {
   }
 };
 
-// --------------------------------------------------
-// AUTH - SIGN OUT
-// --------------------------------------------------
 export const signOut = () => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('user');
 };
 
-// --------------------------------------------------
-// AUTH - CHECK LOGIN
-// --------------------------------------------------
 export const isAuthenticated = () => Boolean(localStorage.getItem('access_token'));
 
-// --------------------------------------------------
-// ASSESSMENT
-// --------------------------------------------------
 export const submitAssessment = async (assessmentData) => {
   const companyName = String(assessmentData?.company_name || '').trim();
   if (!companyName) {
@@ -139,16 +124,33 @@ export const submitAssessment = async (assessmentData) => {
       ...assessmentData,
       company_name: companyName,
     });
-    return response.data;
+
+    const result = response.data;
+
+    // The results screen expects the recommendation in the assessment response.
+    // Fetch it here so the AI section is populated immediately after calculation.
+    try {
+      const actionPlan = await getActionPlan();
+      if (actionPlan?.action_plan) {
+        return {
+          ...result,
+          recommendation: actionPlan.action_plan,
+          aiRecommendation: actionPlan.action_plan,
+          action_plan: actionPlan.action_plan,
+        };
+      }
+    } catch (actionPlanError) {
+      // Do not make a successful footprint calculation fail just because AI is unavailable.
+      console.warn('AI recommendation unavailable after assessment:', actionPlanError);
+    }
+
+    return result;
   } catch (error) {
     console.error('Error submitting assessment:', error);
     throw error;
   }
 };
 
-// --------------------------------------------------
-// DASHBOARD
-// --------------------------------------------------
 export const getDashboardResults = async () => {
   try {
     const response = await api.get('/results');
@@ -159,9 +161,6 @@ export const getDashboardResults = async () => {
   }
 };
 
-// --------------------------------------------------
-// WHAT-IF SIMULATOR
-// --------------------------------------------------
 export const runWhatIfSimulation = async (scenarioData) => {
   try {
     const response = await api.post('/what-if', scenarioData);
@@ -172,9 +171,6 @@ export const runWhatIfSimulation = async (scenarioData) => {
   }
 };
 
-// --------------------------------------------------
-// AI ACTION PLAN
-// --------------------------------------------------
 export const getActionPlan = async () => {
   try {
     const accessToken = localStorage.getItem('access_token');
