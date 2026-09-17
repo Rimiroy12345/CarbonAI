@@ -2001,3 +2001,78 @@ select:focus-visible {
       linear-gradient(135deg, rgba(255,255,255,.84), rgba(231,246,233,.80));
   }
 }
+
+
+/* Assessment-result AI preview */
+.recommendation-preview {
+  padding: 24px;
+  border: 1px solid rgba(77, 147, 99, .20);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(183, 234, 196, .28), transparent 42%),
+    rgba(248, 253, 249, .78);
+}
+.recommendation-label {
+  margin-bottom: 8px;
+  color: #4b8e63;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 1.8px;
+}
+.recommendation-preview h2 {
+  margin-bottom: 9px;
+}
+.recommendation-preview > p {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(43, 73, 55, .78);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.recommendation-priority {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-left: 3px solid #5aa774;
+  border-radius: 0 10px 10px 0;
+  background: rgba(255, 255, 255, .72);
+}
+.recommendation-priority span,
+.recommendation-priority strong {
+  display: block;
+}
+.recommendation-priority span {
+  color: #648571;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.recommendation-priority strong {
+  margin-top: 4px;
+  color: #285b3d;
+  font-size: 14px;
+}
+.recommendation-dashboard-cta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 17px;
+  color: #60796a;
+  font-size: 12px;
+}
+.recommendation-dashboard-cta button {
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: #2f8953;
+  padding: 0 0 1px;
+  font-weight: 800;
+}
+.recommendation-dashboard-cta button:hover {
+  color: #1e6940;
+}
+
+@media (max-width: 700px) {
+  .recommendation-preview { padding: 19px; }
+}
