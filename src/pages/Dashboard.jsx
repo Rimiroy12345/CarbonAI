@@ -3,7 +3,7 @@ import { getDashboardResults } from '../services/api';
 import WhatIfSimulator from '../components/simulator/WhatIfSimulator';
 import ActionPlanList from '../components/recommendations/ActionPlanList';
 
-export default function Dashboard({ companyId = null }) {
+export default function Dashboard({ companyId = null, onRestart }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,10 +48,7 @@ export default function Dashboard({ companyId = null }) {
           </p>
           <button
             type="button"
-            onClick={() => {
-              localStorage.setItem('carbonai_restart_assessment', '1');
-              window.location.reload();
-            }}
+            onClick={onRestart}
             style={{
               marginTop: '24px',
               padding: '12px 20px',
@@ -95,10 +92,7 @@ export default function Dashboard({ companyId = null }) {
 
           <button
             type="button"
-            onClick={() => {
-              localStorage.setItem('carbonai_restart_assessment', '1');
-              window.location.reload();
-            }}
+            onClick={onRestart}
             style={{
               padding: '11px 18px',
               borderRadius: '999px',
