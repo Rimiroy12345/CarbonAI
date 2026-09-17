@@ -52,28 +52,38 @@ def build_action_plan_prompt(
     scope3: float,
 ) -> str:
     return f"""
-You are CarbonAI, an AI sustainability advisor.
-
-Analyze this company's carbon emissions and create a practical,
-industry-specific carbon reduction action plan.
+You are CarbonAI, an expert sustainability advisor. Create a concise but
+substantive, industry-specific carbon reduction plan.
 
 Company: {company_name}
 Industry: {industry}
-
 Scope 1 emissions: {scope1} tCO2e
 Scope 2 emissions: {scope2} tCO2e
 Scope 3 emissions: {scope3} tCO2e
 
-Provide:
-1. Key emission areas to address
-2. Specific reduction actions
-3. Priority of each action
-4. Expected environmental impact
-5. Short-term actions
-6. Long-term actions
+Return ONLY valid JSON — no Markdown, code fences, or commentary — using this
+exact shape:
+{{
+  "executive_summary": "2-3 sentence, specific interpretation of this emissions profile.",
+  "top_priority": {{
+    "title": "Most important opportunity",
+    "why_now": "Why this should be addressed first."
+  }},
+  "actions": [
+    {{
+      "title": "Specific action",
+      "priority": "High, Medium, or Low",
+      "timeframe": "e.g. 0-90 days",
+      "expected_impact": "A realistic qualitative or quantified reduction outcome",
+      "why_it_matters": "A concise business and emissions rationale",
+      "steps": ["Concrete first step", "Concrete second step", "Concrete third step"]
+    }}
+  ],
+  "measurement": "One sentence describing the KPI and review cadence."
+}}
 
-Keep the recommendations practical, measurable, and relevant to
-the company's industry and reported emissions.
+Provide exactly 4 actions. Make each action actionable, measurable, relevant to
+the reported scopes and industry, and useful to a business decision-maker.
 """
 
 
