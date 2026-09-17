@@ -258,9 +258,12 @@ def submit_assessment(data: AssessmentInput, current_user = Depends(get_current_
 
     factor_map = {f["category"]: f["factor_value"] for f in factors}
     category_totals = {
-        cat: round(val * factor_map.get(cat, 0), 2) for cat, val in entry_categories.items()
-    }
-    total = round(sum(category_totals.values()), 2)
+    cat: round(val * factor_map.get(cat, 0), 2)
+    for cat, val in entry_categories.items()
+}
+
+total_kgco2e = round(sum(category_totals.values()), 2)
+total_tco2e = round(total_kgco2e / 1000, 4)
 
     energy = category_totals["electricity"] + category_totals["natural_gas"]
     transport = (
