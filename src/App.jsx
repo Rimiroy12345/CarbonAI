@@ -23,6 +23,36 @@ const emissionFields = [
 ];
 
 const initialCompany = { name: '', industry: '', employees: '', location: '' };
+
+function getRecommendationPreview(recommendation) {
+  const fallback = {
+    summary: 'Your detailed, tailored action plan is ready in the dashboard.',
+    priority: '',
+  };
+
+  if (!recommendation) return fallback;
+
+  try {
+    const cleaned = String(recommendation)
+      .trim()
+      .replace(/^\`\`\`(?:json)?\s*/i, '')
+      .replace(/\`\`\`$/i, '');
+    const plan = JSON.parse(cleaned);
+    const summary = String(plan.executive_summary || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const priority = String(plan.top_priority?.title || plan.actions?.[0]?.title || '').trim();
+
+    return {
+      summary: summary
+        ? summary.slice(0, 260) + (summary.length > 260 ? '…' : '')
+        : fallback.summary,
+      priority,
+    };
+  } catch {
+    return fallback;
+  }
+}
 const initialEmissions = {
   electricity: '', naturalGas: '', petrol: '', diesel: '', flights: '', hotels: '', commuting: '', waste: '',
 };
@@ -137,6 +167,7 @@ export default function App() {
   const transportPct = Number(breakdownPct.transport ?? 0);
   const wastePct = Number(breakdownPct.waste ?? 0);
   const largestSource = Object.entries({ Energy: energyPct, Transport: transportPct, Waste: wastePct }).reduce((max, item) => (item[1] > max[1] ? item : max), ['Energy', 0]);
+  const recommendationPreview = getRecommendationPreview(aiRecommendation);
 
   return (
     <div className="app">
@@ -178,7 +209,7 @@ export default function App() {
           )}
 
           {step === 4 && assessmentResult && (
-            <main className="results-page"><section className="results-section"><div className="results-card"><div className="badge">✦ YOUR CARBON REPORT</div><h1>Your footprint is<br /><span>{totalTco2e.toFixed(2)} tCO₂e</span></h1><p className="results-description">Here is a summary of your estimated annual carbon footprint based on the information you provided.</p><div className="results-grid"><div className="result-highlight"><span>Total annual emissions</span><strong>{totalTco2e.toFixed(2)} tCO₂e</strong></div><div className="result-highlight"><span>Largest source</span><strong>{largestSource[0]}</strong><small>{Number(largestSource[1]).toFixed(1)}% of emissions</small></div></div><div className="breakdown"><h2>Emission breakdown</h2><div className="breakdown-list"><div><span>Energy</span><strong>{energyPct.toFixed(1)}%</strong></div><div><span>Transport</span><strong>{transportPct.toFixed(1)}%</strong></div><div><span>Waste</span><strong>{wastePct.toFixed(1)}%</strong></div></div></div><div className="recommendation"><h2>AI recommendations</h2><p>{aiRecommendation || 'No recommendation available.'}</p></div><div className="results-actions"><button type="button" className="carbonai-primary" onClick={restartAssessment}>↻ Restart assessment</button><button type="button" className="carbonai-secondary" onClick={handleDashboardAccess}>View dashboard</button></div></div></section></main>
+            <main className="results-page"><section className="results-section"><div className="results-card"><div className="badge">✦ YOUR CARBON REPORT</div><h1>Your footprint is<br /><span>{totalTco2e.toFixed(2)} tCO₂e</span></h1><p className="results-description">Here is a summary of your estimated annual carbon footprint based on the information you provided.</p><div className="results-grid"><div className="result-highlight"><span>Total annual emissions</span><strong>{totalTco2e.toFixed(2)} tCO₂e</strong></div><div className="result-highlight"><span>Largest source</span><strong>{largestSource[0]}</strong><small>{Number(largestSource[1]).toFixed(1)}% of emissions</small></div></div><div className="breakdown"><h2>Emission breakdown</h2><div className="breakdown-list"><div><span>Energy</span><strong>{energyPct.toFixed(1)}%</strong></div><div><span>Transport</span><strong>{transportPct.toFixed(1)}%</strong></div><div><span>Waste</span><strong>{wastePct.toFixed(1)}%</strong></div></div></div><div className="recommendation recommendation-preview"><div className="recommendation-label">AI ACTION-PLAN PREVIEW</div><h2>Your next move</h2><p>{recommendationPreview.summary}</p>{recommendationPreview.priority && <div className="recommendation-priority"><span>Top priority</span><strong>{recommendationPreview.priority}</strong></div>}<div className="recommendation-dashboard-cta"><span>For detailed advice, steps, timing, and expected impact,</span><button type="button" onClick={handleDashboardAccess}>head to dashboard →</button></div></div><div className="results-actions"><button type="button" className="carbonai-primary" onClick={restartAssessment}>↻ Restart assessment</button><button type="button" className="carbonai-secondary" onClick={handleDashboardAccess}>View dashboard</button></div></div></section></main>
           )}
         </>
       )}
