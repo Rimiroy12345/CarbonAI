@@ -95,8 +95,50 @@ export const isAuthenticated = () => Boolean(localStorage.getItem('access_token'
 // ASSESSMENT
 // --------------------------------------------------
 export const submitAssessment = async (assessmentData) => {
+  const companyName = String(assessmentData?.company_name || '').trim();
+  if (!companyName) {
+    throw new Error('Please enter your company name before calculating your footprint.');
+  }
+
+  const numericFields = [
+    'electricity',
+    'natural_gas',
+    'petrol',
+    'diesel',
+    'air_travel',
+    'hotels',
+    'commuting',
+    'waste',
+  ];
+
+  for (const field of numericFields) {
+    const value = Number(assessmentData?.[field] ?? 0);
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error('Emission values must be valid numbers greater than or equal to zero.');
+    }
+  }
+
+  const totalActivity = numericFields.reduce(
+    (sum, field) => sum + Number(assessmentData?.[field] ?? 0),
+    0
+  );
+
+  if (totalActivity <= 0) {
+    throw new Error('Please enter at least one non-zero emission value before calculating your footprint.');
+  }
+
+  const employeeCount = assessmentData?.employee_count;
+  if (employeeCount !== null && employeeCount !== undefined) {
+    if (!Number.isInteger(employeeCount) || employeeCount < 1) {
+      throw new Error('Employee count must be a whole number greater than zero.');
+    }
+  }
+
   try {
-    const response = await api.post('/assessment', assessmentData);
+    const response = await api.post('/assessment', {
+      ...assessmentData,
+      company_name: companyName,
+    });
     return response.data;
   } catch (error) {
     console.error('Error submitting assessment:', error);
