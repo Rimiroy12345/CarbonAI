@@ -258,12 +258,12 @@ def submit_assessment(data: AssessmentInput, current_user = Depends(get_current_
 
     factor_map = {f["category"]: f["factor_value"] for f in factors}
     category_totals = {
-    cat: round(val * factor_map.get(cat, 0), 2)
-    for cat, val in entry_categories.items()
-}
+        cat: round(val * factor_map.get(cat, 0), 2)
+        for cat, val in entry_categories.items()
+    }
 
-total_kgco2e = round(sum(category_totals.values()), 2)
-total_tco2e = round(total_kgco2e / 1000, 4)
+    total_kgco2e = round(sum(category_totals.values()), 2)
+    total_tco2e = round(total_kgco2e / 1000, 4)
 
     energy = category_totals["electricity"] + category_totals["natural_gas"]
     transport = (
@@ -273,27 +273,27 @@ total_tco2e = round(total_kgco2e / 1000, 4)
     waste = category_totals["waste"] + category_totals["hotels"]
 
     breakdown_pct = {}
-    if total > 0:
+    if total_kgco2e > 0:
         breakdown_pct = {
-            "energy": round((energy / total) * 100),
-            "transport": round((transport / total) * 100),
-            "waste": round((waste / total) * 100),
+            "energy": round((energy / total_kgco2e) * 100),
+            "transport": round((transport / total_kgco2e) * 100),
+            "waste": round((waste / total_kgco2e) * 100),
         }
 
     # 4. Save the result
     result_response = supabase_admin.table("results").insert({
         "company_id": company_id,
-        "total_tco2e": total,
+        "total_tco2e": total_tco2e,
         "category_breakdown": breakdown_pct,
     }).execute()
 
-return {
-    "company_id": company_id,
-    "total_kgco2e": total_kgco2e,
-    "total_tco2e": total_tco2e,
-    "category_totals": category_totals,
-    "breakdown_pct": breakdown_pct,
-}
+    return {
+        "company_id": company_id,
+        "total_kgco2e": total_kgco2e,
+        "total_tco2e": total_tco2e,
+        "category_totals": category_totals,
+        "breakdown_pct": breakdown_pct,
+    }
 
 
 @app.get("/results/{company_id}")
@@ -381,4 +381,3 @@ def get_action_plan(current_user=Depends(get_current_user)):
         "scope3": scope3,
         "action_plan": action_plan,
     }
-
