@@ -287,12 +287,13 @@ total_tco2e = round(total_kgco2e / 1000, 4)
         "category_breakdown": breakdown_pct,
     }).execute()
 
-    return {
-        "company_id": company_id,
-        "total_tco2e": total_tco2e,
-        "category_totals": category_totals,
-        "breakdown_pct": breakdown_pct,
-    }
+return {
+    "company_id": company_id,
+    "total_kgco2e": total_kgco2e,
+    "total_tco2e": total_tco2e,
+    "category_totals": category_totals,
+    "breakdown_pct": breakdown_pct,
+}
 
 
 @app.get("/results/{company_id}")
