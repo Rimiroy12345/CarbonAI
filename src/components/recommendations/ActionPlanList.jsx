@@ -1,6 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { getActionPlan } from '../../services/api';
 
+const fallbackPlan = [
+  {
+    title: 'Reduce your largest emission source first',
+    detail: 'Use the emissions breakdown above to prioritize the category with the highest annual CO₂e contribution. Set a measurable reduction target and review it monthly.',
+  },
+  {
+    title: 'Improve energy efficiency',
+    detail: 'Audit electricity and fuel consumption, remove avoidable usage, and evaluate renewable electricity options where practical.',
+  },
+  {
+    title: 'Cut travel-related emissions',
+    detail: 'Consolidate business trips, prefer lower-emission travel options where feasible, and use virtual meetings for trips that do not require physical presence.',
+  },
+];
+
+function parsePlan(text) {
+  if (!text) return [];
+  return text
+    .split(/\n+/)
+    .map((line) => line.replace(/^\s*(?:\d+[.)]|[-*•])\s*/, '').trim())
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
 export default function ActionPlanList() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +46,7 @@ export default function ActionPlanList() {
           setError(
             err?.response?.data?.detail ||
             err?.message ||
-            'Unable to generate the AI action plan right now.'
+            'The AI service is temporarily unavailable.'
           );
         }
       } finally {
@@ -31,50 +55,79 @@ export default function ActionPlanList() {
     }
 
     loadActionPlan();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
+
+  const recommendations = parsePlan(data?.action_plan);
+  const usingFallback = recommendations.length === 0;
 
   if (loading) {
     return (
-      <div className="p-6 bg-white rounded-xl border border-gray-100 animate-pulse my-6">
-        <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-        <div className="h-20 bg-gray-100 rounded mb-3"></div>
-        <div className="h-20 bg-gray-100 rounded"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="my-6 p-5 bg-white border border-amber-100 rounded-xl shadow-sm">
-        <h3 className="text-xl font-bold text-gray-800 mb-2">AI Recommended Action Plan</h3>
-        <p className="text-sm text-gray-500">{error}</p>
-      </div>
+      <section className="carbon-action-plan carbon-action-plan-loading">
+        <div className="carbon-action-header">
+          <div>
+            <span className="carbon-action-eyebrow">AI SUSTAINABILITY ADVISOR</span>
+            <h2>AI Recommended Action Plan</h2>
+          </div>
+          <span className="carbon-action-status">Analyzing</span>
+        </div>
+        <div className="carbon-action-loading-line" />
+        <p>Generating recommendations from your latest assessment...</p>
+      </section>
     );
   }
 
   return (
-    <div className="my-6">
-      <h3 className="text-xl font-bold text-gray-800 mb-4">AI Recommended Action Plan</h3>
-      <div className="p-5 bg-white border border-gray-100 rounded-xl shadow-sm">
-        <div className="flex flex-wrap gap-2 mb-4 text-xs font-semibold">
-          <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full">
-            Scope 1: {Number(data?.scope1 || 0).toFixed(2)} tCO₂e
-          </span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
-            Scope 2: {Number(data?.scope2 || 0).toFixed(2)} tCO₂e
-          </span>
-          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
-            Scope 3: {Number(data?.scope3 || 0).toFixed(2)} tCO₂e
-          </span>
+    <section className="carbon-action-plan">
+      <div className="carbon-action-header">
+        <div>
+          <span className="carbon-action-eyebrow">AI SUSTAINABILITY ADVISOR</span>
+          <h2>AI Recommended Action Plan</h2>
+          <p>Practical next steps based on your current emissions profile.</p>
         </div>
-        <div className="text-sm text-gray-700 leading-7 whitespace-pre-wrap">
-          {data?.action_plan || 'No AI recommendations were returned.'}
-        </div>
+        {usingFallback ? (
+          <span className="carbon-action-status">Ready</span>
+        ) : (
+          <span className="carbon-action-status">AI generated</span>
+        )}
       </div>
-    </div>
+
+      {data && (
+        <div className="carbon-scope-grid">
+          <div><span>Scope 1</span><strong>{Number(data.scope1 || 0).toFixed(2)} tCO₂e</strong></div>
+          <div><span>Scope 2</span><strong>{Number(data.scope2 || 0).toFixed(2)} tCO₂e</strong></div>
+          <div><span>Scope 3</span><strong>{Number(data.scope3 || 0).toFixed(2)} tCO₂e</strong></div>
+        </div>
+      )}
+
+      {usingFallback ? (
+        <div className="carbon-fallback-note">
+          {error ? 'AI recommendations are temporarily unavailable, so CarbonAI is showing practical baseline actions instead of an empty result.' : 'CarbonAI is showing practical baseline actions for this assessment.'}
+        </div>
+      ) : (
+        <div className="carbon-action-list">
+          {recommendations.map((item, index) => (
+            <article className="carbon-action-item" key={`${item}-${index}`}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <p>{item}</p>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {usingFallback && (
+        <div className="carbon-action-list">
+          {fallbackPlan.map((item, index) => (
+            <article className="carbon-action-item" key={item.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.detail}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
