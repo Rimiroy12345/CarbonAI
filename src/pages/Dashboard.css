@@ -81,3 +81,144 @@
 
 @media (max-width:900px) { .dashboard-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .dashboard-metric-featured { grid-column:1 / -1; } .carbon-simulator-grid { grid-template-columns:1fr; } }
 @media (max-width:650px) { .dashboard-page { padding:105px 14px 50px; } .dashboard-header { align-items:stretch; flex-direction:column; } .dashboard-button { width:100%; } .dashboard-metrics { grid-template-columns:1fr; } .dashboard-metric-featured { grid-column:auto; } .carbon-simulator,.carbon-action-plan { padding:20px; } .carbon-simulator-header,.carbon-action-header { flex-direction:column; } .carbon-simulator-export { width:100%; } .carbon-scope-grid { grid-template-columns:1fr; } }
+
+
+/* Action-plan cards */
+.carbon-plan-summary {
+  margin: 20px 0 16px;
+  padding: 20px 22px;
+  border: 1px solid #d8eadf;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f2fbf4, #fbfdfb);
+}
+.carbon-plan-summary > span,
+.carbon-action-impact > span {
+  display: block;
+  color: #548269;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+.carbon-plan-summary > p {
+  margin: 8px 0 14px;
+  color: #315342;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.carbon-plan-priority {
+  padding: 13px 15px;
+  border-left: 3px solid #4d9b67;
+  border-radius: 0 10px 10px 0;
+  background: rgba(255, 255, 255, .72);
+}
+.carbon-plan-priority strong,
+.carbon-plan-priority small {
+  display: block;
+}
+.carbon-plan-priority strong {
+  color: #24563a;
+  font-size: 13px;
+}
+.carbon-plan-priority small {
+  margin-top: 4px;
+  color: #60776a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.carbon-action-cards {
+  gap: 14px;
+}
+.carbon-action-card {
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 16px;
+  padding: 20px;
+  border-color: #dce9e0;
+  background: linear-gradient(135deg, #ffffff, #fbfdfb);
+}
+.carbon-action-number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: #e6f5eb;
+  color: #2d8151;
+  font-size: 10px;
+  font-weight: 850;
+}
+.carbon-action-card-topline {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+.carbon-priority,
+.carbon-timeframe {
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.carbon-priority.is-high { background: #fff0ed; color: #b54a36; }
+.carbon-priority.is-medium { background: #fff8e5; color: #97711f; }
+.carbon-priority.is-low { background: #edf5ff; color: #4072a6; }
+.carbon-timeframe { background: #f0f5f1; color: #5e7568; }
+.carbon-action-card h3 {
+  margin: 0 0 7px;
+  color: #1d4931;
+  font-size: 17px;
+  line-height: 1.3;
+}
+.carbon-action-card p {
+  margin: 0;
+  color: #62766b;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.carbon-action-impact {
+  margin-top: 15px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f2f8f3;
+}
+.carbon-action-impact strong {
+  display: block;
+  margin-top: 4px;
+  color: #2c6948;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.carbon-action-steps {
+  display: grid;
+  gap: 6px;
+  margin: 15px 0 0;
+  padding-left: 18px;
+  color: #52685b;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.carbon-action-steps li::marker {
+  color: #4f9a68;
+  font-weight: 800;
+}
+.carbon-measurement {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f8faf8;
+  color: #66796e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.carbon-measurement strong { color: #315b42; }
+
+@media (max-width: 650px) {
+  .carbon-plan-summary,
+  .carbon-action-card { padding: 16px; }
+  .carbon-action-card { grid-template-columns: 34px minmax(0, 1fr); gap: 11px; }
+  .carbon-action-card h3 { font-size: 15px; }
+}
