@@ -1,39 +1,47 @@
 import os
+import time
 
 from dotenv import load_dotenv
 from google import genai
 
 load_dotenv()
 
-# Use stable, production-ready Gemini models. The fallback helps when a model
-# is temporarily at capacity; Google recommends retry/backoff for 503 errors.
-PRIMARY_MODEL = "gemini-2.5-flash"
-FALLBACK_MODEL = "gemini-2.5-flash-lite"
+# Stable Gemini 3 models. Environment overrides let us update a model without
+# changing source code if a provider deprecates one in the future.
+PRIMARY_MODEL = os.getenv("GEMINI_PRIMARY_MODEL", "gemini-3.6-flash")
+FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
+MAX_ATTEMPTS_PER_MODEL = 2
 
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def generate_ai_response(prompt: str) -> str:
-    """Generate a text response, falling back if Gemini is temporarily unavailable."""
-    try:
-        response = gemini_client.models.generate_content(
-            model=PRIMARY_MODEL,
-            contents=prompt,
-        )
-        if response.text:
-            return response.text.strip()
-    except Exception as primary_error:
-        print(f"Primary Gemini model failed: {primary_error}")
+    """Generate a recommendation with retry and a lower-cost fallback model."""
+    last_error = None
 
-    response = gemini_client.models.generate_content(
-        model=FALLBACK_MODEL,
-        contents=prompt,
-    )
+    for model in (PRIMARY_MODEL, FALLBACK_MODEL):
+        for attempt in range(MAX_ATTEMPTS_PER_MODEL):
+            try:
+                response = gemini_client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
+                if response.text:
+                    return response.text.strip()
+                last_error = RuntimeError("Gemini returned an empty recommendation.")
+            except Exception as error:
+                last_error = error
+                print(
+                    f"Gemini model {model} failed "
+                    f"(attempt {attempt + 1}/{MAX_ATTEMPTS_PER_MODEL}): {error}"
+                )
 
-    if not response.text:
-        raise RuntimeError("Gemini returned an empty recommendation.")
+            if attempt < MAX_ATTEMPTS_PER_MODEL - 1:
+                time.sleep(2 ** attempt)
 
-    return response.text.strip()
+    raise RuntimeError(
+        "AI recommendations are temporarily unavailable. Please try again shortly."
+    ) from last_error
 
 
 def build_action_plan_prompt(
