@@ -46,6 +46,25 @@ export default function Dashboard({ companyId = null }) {
           <p className="text-gray-500 mt-2">
             {error || 'Complete your company assessment to see your carbon dashboard.'}
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem('carbonai_restart_assessment', '1');
+              window.location.reload();
+            }}
+            style={{
+              marginTop: '24px',
+              padding: '12px 20px',
+              borderRadius: '999px',
+              border: '1px solid #d9e8df',
+              background: '#ffffff',
+              color: '#235c41',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            ↻ Start assessment
+          </button>
         </div>
       </div>
     );
@@ -58,12 +77,42 @@ export default function Dashboard({ companyId = null }) {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          {data.company_name || 'Company Dashboard'}
-        </h1>
-        <p className="text-gray-500">
-          Carbon footprint overview based on your latest assessment
-        </p>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '20px',
+          flexWrap: 'wrap',
+        }}>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {data.company_name || 'Company Dashboard'}
+            </h1>
+            <p className="text-gray-500">
+              Carbon footprint overview based on your latest assessment
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem('carbonai_restart_assessment', '1');
+              window.location.reload();
+            }}
+            style={{
+              padding: '11px 18px',
+              borderRadius: '999px',
+              border: '1px solid #d9e8df',
+              background: '#ffffff',
+              color: '#235c41',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ↻ Restart assessment
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
