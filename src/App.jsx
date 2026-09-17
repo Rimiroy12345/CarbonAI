@@ -358,15 +358,18 @@ const payload = {
       }
 
       setStep(4);
-    } catch (error) {
-      console.error(
-        'Calculation failed:',
-        error
-      );
+} catch (error) {
+  console.error(
+    'Calculation failed:',
+    error
+  );
 
-      // Keep existing fallback behaviour
-      setStep(4);
-    } finally {
+  alert(
+    error?.response?.data?.detail ||
+    'Calculation failed. Please check your information and try again.'
+  );
+}
+    finally {
       setLoading(false);
     }
   };
