@@ -316,10 +316,23 @@ export default function App() {
 
     setLoading(true);
 
-    const payload = {
-      company,
-      emissions,
-    };
+const payload = {
+  company_name: company.name,
+  industry: company.industry || 'general',
+  employee_count: company.employees
+    ? parseInt(company.employees, 10)
+    : null,
+  location: company.location || null,
+
+  electricity: parseFloat(emissions.electricity) || 0,
+  natural_gas: parseFloat(emissions.naturalGas) || 0,
+  petrol: parseFloat(emissions.petrol) || 0,
+  diesel: parseFloat(emissions.diesel) || 0,
+  air_travel: parseFloat(emissions.flights) || 0,
+  hotels: parseFloat(emissions.hotels) || 0,
+  commuting: parseFloat(emissions.commuting) || 0,
+  waste: parseFloat(emissions.waste) || 0,
+};
 
     try {
       console.log('Submitting assessment...');
