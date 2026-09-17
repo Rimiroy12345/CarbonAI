@@ -1,0 +1,178 @@
+import axios from 'axios';
+
+const API_BASE_URL = 'https://carbonai-backend.onrender.com';
+
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Automatically attach Supabase access token
+api.interceptors.request.use(
+  (config) => {
+    const accessToken = localStorage.getItem('access_token');
+
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// --------------------------------------------------
+// AUTH - SIGN IN
+// --------------------------------------------------
+
+export const signIn = async (email, password) => {
+  try {
+    const response = await api.post('/auth/signin', {
+      email,
+      password,
+    });
+
+    const data = response.data;
+
+    // YOUR BACKEND RETURNS:
+    // {
+    //   user: {...},
+    //   session: {
+    //     access_token: "..."
+    //   }
+    // }
+
+    const accessToken = data?.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error(
+        'Login succeeded but no access token was returned by the backend.'
+      );
+    }
+
+    // Save access token
+    localStorage.setItem('access_token', accessToken);
+
+    // Save user information
+    if (data?.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Sign in failed:', error);
+
+    const message =
+      error?.response?.data?.detail ||
+      error?.response?.data?.message ||
+      error?.message ||
+      'Invalid email or password. Please try again.';
+
+    throw new Error(message);
+  }
+};
+
+// --------------------------------------------------
+// AUTH - SIGN OUT
+// --------------------------------------------------
+
+export const signOut = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user');
+};
+
+// --------------------------------------------------
+// AUTH - CHECK LOGIN
+// --------------------------------------------------
+
+export const isAuthenticated = () => {
+  return Boolean(localStorage.getItem('access_token'));
+};
+
+// --------------------------------------------------
+// ASSESSMENT
+// --------------------------------------------------
+
+export const submitAssessment = async (assessmentData) => {
+  try {
+    const response = await api.post('/assessment', assessmentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting assessment:', error);
+    throw error;
+  }
+};
+
+// --------------------------------------------------
+// DASHBOARD
+// --------------------------------------------------
+
+export const getDashboardResults = async () => {
+  try {
+    const response = await api.get('/results');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching dashboard results:', error);
+    throw error;
+  }
+};
+
+// --------------------------------------------------
+// WHAT-IF SIMULATOR
+// --------------------------------------------------
+
+export const runWhatIfSimulation = async (scenarioData) => {
+  try {
+    const response = await api.post('/what-if', scenarioData);
+    return response.data;
+  } catch (error) {
+    console.error('Error running What-If simulation:', error);
+    throw error;
+  }
+};
+
+// --------------------------------------------------
+// AI ACTION PLAN
+// --------------------------------------------------
+
+export const getActionPlan = async () => {
+  try {
+    const accessToken = localStorage.getItem('access_token');
+
+    if (!accessToken) {
+      throw new Error('No access token found. Please log in again.');
+    }
+
+    const response = await api.get('/action-plan', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching action plan:', error);
+    throw error;
+  }
+};
+
+// --------------------------------------------------
+// DEFAULT EXPORT
+// --------------------------------------------------
+
+const apiExport = {
+  api,
+  signIn,
+  signOut,
+  isAuthenticated,
+  submitAssessment,
+  getDashboardResults,
+  runWhatIfSimulation,
+  getActionPlan,
+};
+
+export default apiExport;
