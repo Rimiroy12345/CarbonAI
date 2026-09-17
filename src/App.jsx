@@ -111,7 +111,7 @@ export default function App() {
     try {
       const response = await submitAssessment(payload); setAssessmentResult(response); setAiRecommendation(response?.recommendation || response?.aiRecommendation || ''); setStep(4);
     } catch (error) {
-      console.error('Calculation failed:', error); alert(error?.response?.data?.detail || 'Calculation failed. Please check your information and try again.');
+      console.error('Calculation failed:', error); alert(error?.response?.data?.detail || error?.message || 'Calculation failed. Please check your information and try again.');
     } finally { setLoading(false); }
   };
 
@@ -134,7 +134,7 @@ export default function App() {
       </nav>
 
       {activeTab === 'dashboard' ? (
-        <Dashboard company={company} emissions={emissions} aiRecommendation={aiRecommendation} onLogout={handleLogout} />
+        <Dashboard onRestart={restartAssessment} />
       ) : (
         <>
           {step === 1 && (
