@@ -9,7 +9,11 @@ html {
 body {
   margin: 0;
   font-family: Inter, Arial, sans-serif;
-  background: #06110c;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(246, 174, 201, 0.32), transparent 28%),
+    radial-gradient(circle at 92% 48%, rgba(147, 207, 167, 0.30), transparent 30%),
+    linear-gradient(135deg, #f8dbe6 0%, #ffffff 47%, #dcefdc 100%);
+  background-attachment: fixed;
   color: #f5f7f4;
 }
 
@@ -32,13 +36,21 @@ select:focus-visible {
 
 .app {
   min-height: 100vh;
-  background: #06110c;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(246, 174, 201, 0.32), transparent 28%),
+    radial-gradient(circle at 92% 48%, rgba(147, 207, 167, 0.30), transparent 30%),
+    linear-gradient(135deg, #f8dbe6 0%, #ffffff 47%, #dcefdc 100%);
+  background-attachment: fixed;
 }
 
 .carbonai-landing {
   min-height: 100vh;
   overflow-x: hidden;
-  background: #06110c;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(246, 174, 201, 0.32), transparent 28%),
+    radial-gradient(circle at 92% 48%, rgba(147, 207, 167, 0.30), transparent 30%),
+    linear-gradient(135deg, #f8dbe6 0%, #ffffff 47%, #dcefdc 100%);
+  background-attachment: fixed;
   color: #f5f7f4;
 }
 
@@ -353,7 +365,11 @@ select:focus-visible {
 .carbonai-trust {
   padding: 34px 7% 75px;
   text-align: center;
-  background: #06110c;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(246, 174, 201, 0.32), transparent 28%),
+    radial-gradient(circle at 92% 48%, rgba(147, 207, 167, 0.30), transparent 30%),
+    linear-gradient(135deg, #f8dbe6 0%, #ffffff 47%, #dcefdc 100%);
+  background-attachment: fixed;
 }
 
 .carbonai-trust p {
@@ -584,7 +600,11 @@ select:focus-visible {
 
 .carbonai-about {
   padding: 110px 7%;
-  background: #06110c;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(246, 174, 201, 0.32), transparent 28%),
+    radial-gradient(circle at 92% 48%, rgba(147, 207, 167, 0.30), transparent 30%),
+    linear-gradient(135deg, #f8dbe6 0%, #ffffff 47%, #dcefdc 100%);
+  background-attachment: fixed;
 }
 
 .carbonai-about-card {
@@ -916,7 +936,10 @@ select:focus-visible {
   padding: 38px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 24px;
-  background: #102019;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(246, 174, 201, 0.20), transparent 30%),
+    radial-gradient(circle at 92% 85%, rgba(147, 207, 167, 0.20), transparent 30%),
+    linear-gradient(135deg, #fff4f8 0%, #ffffff 48%, #eef8ee 100%);
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5);
 }
 
@@ -1484,5 +1507,497 @@ select:focus-visible {
 
   .carbonai-trust-logos {
     gap: 20px;
+  }
+}
+
+
+/* =========================================================
+   CARBONAI — PINK / WHITE / GREEN TRIPLE GRADIENT THEME
+   Final theme overrides
+========================================================= */
+
+html,
+body {
+  background:
+    radial-gradient(circle at 5% 5%, rgba(244, 169, 198, .28), transparent 28%),
+    radial-gradient(circle at 95% 85%, rgba(132, 202, 153, .28), transparent 30%),
+    linear-gradient(135deg, #f8dce7 0%, #ffffff 48%, #deefdf 100%);
+  background-attachment: fixed;
+}
+
+body {
+  color: #183025;
+}
+
+.app {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.carbonai-landing {
+  background:
+    radial-gradient(circle at 7% 12%, rgba(245, 174, 201, .30), transparent 27%),
+    radial-gradient(circle at 93% 55%, rgba(137, 205, 157, .28), transparent 31%),
+    linear-gradient(135deg, #f8dce7 0%, #ffffff 47%, #dff0e0 100%);
+  color: #183025;
+}
+
+.carbonai-navbar {
+  position: fixed;
+  background: rgba(255,255,255,.50);
+  border-bottom: 1px solid rgba(48, 91, 63, .12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.carbonai-logo {
+  color: #173326;
+}
+
+.carbonai-logo .logo-mark,
+.carbonai-logo span:last-child {
+  color: #3d9b61;
+}
+
+.carbonai-nav-links > button:not(.carbonai-signin) {
+  color: rgba(24, 48, 37, .72);
+}
+
+.carbonai-nav-links > button:not(.carbonai-signin):hover {
+  color: #3b9960;
+}
+
+.carbonai-signin {
+  color: #173326;
+  background: rgba(255,255,255,.60);
+  border-color: rgba(48,91,63,.18);
+  box-shadow: 0 6px 22px rgba(60, 115, 79, .08);
+}
+
+.carbonai-signin:hover {
+  border-color: #78b98e;
+  background: rgba(221, 241, 224, .72);
+}
+
+.carbonai-hero {
+  background:
+    radial-gradient(circle at 8% 20%, rgba(246, 174, 201, .34), transparent 28%),
+    radial-gradient(circle at 88% 38%, rgba(131, 204, 155, .30), transparent 31%),
+    linear-gradient(135deg, #f8dbe6 0%, #ffffff 46%, #dcefdc 100%);
+  color: #183025;
+}
+
+.carbonai-hero-glow,
+.carbonai-image-glow {
+  background: rgba(117, 193, 137, .22);
+}
+
+.carbonai-eyebrow,
+.carbonai-hero-text > p {
+  color: rgba(30, 62, 45, .68);
+}
+
+.carbonai-hero-text h1 {
+  color: #163226;
+}
+
+.carbonai-hero-text h1 em {
+  color: #4a9d67;
+}
+
+.carbonai-primary,
+.primary-button {
+  background: linear-gradient(135deg, #b8e8c4, #8ed3a3);
+  color: #143421;
+  box-shadow: 0 10px 28px rgba(75, 156, 99, .16);
+}
+
+.carbonai-primary:hover,
+.primary-button:hover {
+  box-shadow: 0 15px 35px rgba(75, 156, 99, .24);
+}
+
+.carbonai-stats div {
+  border-left-color: rgba(39, 82, 55, .16);
+}
+
+.carbonai-stats strong {
+  color: #244735;
+}
+
+.carbonai-stats span {
+  color: rgba(49, 82, 62, .62);
+}
+
+.carbonai-image-wrap {
+  border-color: rgba(52, 104, 70, .15);
+  box-shadow: 0 35px 90px rgba(44, 87, 57, .18);
+}
+
+.carbonai-trust {
+  background: rgba(255,255,255,.35);
+  color: #183025;
+}
+
+.carbonai-trust p,
+.carbonai-trust-logos {
+  color: rgba(43, 78, 57, .58);
+}
+
+.carbonai-how {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(246, 174, 201, .25), transparent 30%),
+    linear-gradient(135deg, #fff4f8 0%, #ffffff 48%, #edf8ee 100%);
+  color: #183025;
+}
+
+.carbonai-how h2,
+.carbonai-features h2,
+.carbonai-impact h2,
+.carbonai-about h2 {
+  color: #183025;
+}
+
+.carbonai-how h2 em,
+.carbonai-features h2 em,
+.carbonai-impact h2 em,
+.carbonai-about h2 em {
+  color: #4a9d67;
+}
+
+.carbonai-label {
+  color: #668273;
+}
+
+.carbonai-description {
+  color: rgba(54, 83, 65, .68);
+}
+
+.carbonai-process-card,
+.carbonai-feature-card {
+  border-color: rgba(49, 91, 62, .13);
+  background: rgba(255,255,255,.60);
+  box-shadow: 0 14px 45px rgba(58, 101, 68, .07);
+}
+
+.carbonai-process-card:hover,
+.carbonai-feature-card:hover {
+  border-color: rgba(105, 173, 125, .34);
+  background: rgba(255,255,255,.82);
+}
+
+.carbonai-process-icon {
+  background: #e2f2e4;
+  color: #43865a;
+}
+
+.carbonai-process-card h3,
+.carbonai-feature-card h3 {
+  color: #234332;
+}
+
+.carbonai-process-card p,
+.carbonai-feature-card p {
+  color: rgba(60, 88, 70, .70);
+}
+
+.carbonai-features {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(246, 174, 201, .22), transparent 30%),
+    radial-gradient(circle at 0% 100%, rgba(139, 207, 158, .22), transparent 30%),
+    #ffffff;
+  color: #183025;
+}
+
+.carbonai-feature-card {
+  background: rgba(237, 247, 238, .78);
+}
+
+.carbonai-feature-icon {
+  color: #4a9d67;
+}
+
+.carbonai-impact {
+  background:
+    radial-gradient(circle at 82% 20%, rgba(246, 174, 201, .24), transparent 28%),
+    linear-gradient(135deg, #315f43 0%, #3f7d56 50%, #6ca47d 100%);
+  color: white;
+  border-radius: 28px;
+  box-shadow: 0 22px 70px rgba(53, 103, 69, .16);
+}
+
+.carbonai-impact h2,
+.carbonai-impact h2 em {
+  color: white;
+}
+
+.carbonai-impact-stat strong {
+  color: #e9f8ec;
+}
+
+.carbonai-impact-stat span {
+  color: rgba(255,255,255,.72);
+}
+
+.carbonai-about {
+  background: transparent;
+}
+
+.carbonai-about-card {
+  border-color: rgba(48, 91, 63, .13);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(246, 174, 201, .25), transparent 35%),
+    radial-gradient(circle at 0% 100%, rgba(137, 205, 157, .25), transparent 35%),
+    rgba(255,255,255,.68);
+  box-shadow: 0 25px 80px rgba(53, 101, 67, .10);
+}
+
+.carbonai-about h2,
+.carbonai-about-card p {
+  color: #183025;
+}
+
+.carbonai-about h2 em {
+  color: #4a9d67;
+}
+
+.setup-page {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(246, 174, 201, .34), transparent 29%),
+    radial-gradient(circle at 92% 82%, rgba(139, 207, 158, .32), transparent 31%),
+    linear-gradient(135deg, #f8dce7 0%, #ffffff 48%, #deefdf 100%);
+}
+
+.setup-card {
+  background: rgba(255,255,255,.76);
+  border-color: rgba(48, 91, 63, .14);
+  box-shadow: 0 30px 90px rgba(52, 99, 66, .13);
+  color: #183025;
+  backdrop-filter: blur(18px);
+}
+
+.badge {
+  color: #479764;
+}
+
+.setup-card h1 {
+  color: #183025;
+}
+
+.setup-card h1 span {
+  color: #4a9d67;
+}
+
+.setup-description {
+  color: rgba(54, 83, 65, .70);
+}
+
+.form-group label {
+  color: #294735;
+}
+
+.form-group input,
+.form-group select,
+.signin-form input {
+  border-color: rgba(49, 91, 62, .15);
+  background: rgba(255,255,255,.70);
+  color: #183025;
+}
+
+.form-group input::placeholder,
+.signin-form input::placeholder {
+  color: rgba(74, 103, 85, .52);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.signin-form input:focus {
+  border-color: rgba(75, 156, 99, .55);
+  box-shadow: 0 0 0 4px rgba(125, 193, 143, .10);
+}
+
+.form-group select option {
+  background: white;
+  color: #183025;
+}
+
+.secondary-button {
+  border-color: rgba(49, 91, 62, .16);
+  background: rgba(255,255,255,.62);
+  color: #294735;
+}
+
+.secondary-button:hover {
+  background: rgba(222, 240, 224, .75);
+}
+
+.setup-progress span {
+  background: rgba(49, 91, 62, .13);
+}
+
+.setup-progress span.active {
+  background: #72b886;
+}
+
+.setup-progress small {
+  color: rgba(61, 91, 70, .58);
+}
+
+.data-category {
+  border-top-color: rgba(49, 91, 62, .12);
+}
+
+.category-title {
+  color: #234332;
+}
+
+.input-unit span {
+  color: rgba(69, 99, 79, .58);
+}
+
+.result-number {
+  color: #4a9d67;
+}
+
+.result-number span,
+.result-box span {
+  color: rgba(61, 91, 70, .60);
+}
+
+.result-box {
+  border-color: rgba(49, 91, 62, .12);
+  background: rgba(255,255,255,.58);
+}
+
+.result-box small,
+.ai-card small {
+  color: rgba(70, 99, 80, .60);
+}
+
+.result-box strong {
+  color: #244735;
+}
+
+.ai-card {
+  border-color: rgba(79, 160, 102, .17);
+  background: rgba(220, 241, 224, .54);
+}
+
+.ai-icon {
+  color: #4a9d67;
+}
+
+.ai-card p {
+  color: rgba(43, 73, 55, .76);
+}
+
+.signin-overlay {
+  background: rgba(35, 60, 43, .30);
+}
+
+.signin-modal {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(246, 174, 201, .25), transparent 35%),
+    radial-gradient(circle at 0% 100%, rgba(139, 207, 158, .25), transparent 35%),
+    rgba(255,255,255,.94);
+  border-color: rgba(49,91,62,.15);
+  box-shadow: 0 30px 100px rgba(47, 86, 57, .20);
+  color: #183025;
+}
+
+.signin-close {
+  background: rgba(49,91,62,.07);
+  color: #294735;
+}
+
+.signin-logo {
+  color: #4a9d67;
+}
+
+.signin-modal h2 {
+  color: #183025;
+}
+
+.signin-modal h2 span {
+  color: #4a9d67;
+}
+
+.signin-description {
+  color: rgba(54,83,65,.70);
+}
+
+.signin-form label {
+  color: #294735;
+}
+
+.google-button {
+  border-color: rgba(49,91,62,.15);
+  background: rgba(255,255,255,.75);
+  color: #294735;
+}
+
+.signin-divider {
+  color: rgba(70,99,80,.58);
+}
+
+.signin-divider::before,
+.signin-divider::after {
+  background: rgba(49,91,62,.12);
+}
+
+.signup-text {
+  color: rgba(70,99,80,.65);
+}
+
+.signup-text span {
+  color: #4a9d67;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline-color: rgba(104, 177, 125, .75);
+}
+
+/* Soft decorative blobs */
+.carbonai-landing::before,
+.setup-page::before {
+  content: "";
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  left: -120px;
+  top: 28%;
+  border-radius: 50%;
+  background: rgba(245, 174, 201, .16);
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.carbonai-landing::after,
+.setup-page::after {
+  content: "";
+  position: fixed;
+  width: 320px;
+  height: 320px;
+  right: -130px;
+  bottom: 8%;
+  border-radius: 50%;
+  background: rgba(132, 202, 153, .16);
+  filter: blur(75px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (max-width: 700px) {
+  .carbonai-impact {
+    border-radius: 22px;
+  }
+
+  .carbonai-about-card {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(246, 174, 201, .24), transparent 40%),
+      linear-gradient(135deg, rgba(255,255,255,.84), rgba(231,246,233,.80));
   }
 }
