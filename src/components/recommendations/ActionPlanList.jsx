@@ -1,39 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../services/api';
-import ActionPlanCard from './ActionPlanCard';
+import { getActionPlan } from '../../services/api';
 
-export default function ActionPlanList({ companyId }) {
-  const [recommendations, setRecommendations] = useState([]);
+export default function ActionPlanList() {
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    async function loadRecs() {
+    let cancelled = false;
+
+    async function loadActionPlan() {
       try {
-        const data = await api.getRecommendations(companyId);
-        setRecommendations(data.recommendations || []);
+        setLoading(true);
+        setError('');
+        const result = await getActionPlan();
+        if (!cancelled) setData(result);
       } catch (err) {
-        setRecommendations([
-          {
-            title: "Transition to Solar Power Subscriptions",
-            description: "Switching 40% of grid energy to local solar providers yields immediate operational offset.",
-            roi: "12 Mos Payback",
-            impact: "High",
-            estimated_savings: "250 kg CO₂e"
-          },
-          {
-            title: "Optimize Logistics Route Scheduling",
-            description: "Deploy algorithmic route mapping to consolidate delivery runs and reduce transport emissions.",
-            roi: "Immediate",
-            impact: "Medium",
-            estimated_savings: "110 kg CO₂e"
-          }
-        ]);
+        console.error('AI action plan fetch failed:', err);
+        if (!cancelled) {
+          setData(null);
+          setError(
+            err?.response?.data?.detail ||
+            err?.message ||
+            'Unable to generate the AI action plan right now.'
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    if (companyId) loadRecs();
-  }, [companyId]);
+
+    loadActionPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -45,12 +47,34 @@ export default function ActionPlanList({ companyId }) {
     );
   }
 
+  if (error) {
+    return (
+      <div className="my-6 p-5 bg-white border border-amber-100 rounded-xl shadow-sm">
+        <h3 className="text-xl font-bold text-gray-800 mb-2">AI Recommended Action Plan</h3>
+        <p className="text-sm text-gray-500">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="my-6">
       <h3 className="text-xl font-bold text-gray-800 mb-4">AI Recommended Action Plan</h3>
-      {recommendations.map((rec, idx) => (
-        <ActionPlanCard key={idx} rec={rec} />
-      ))}
+      <div className="p-5 bg-white border border-gray-100 rounded-xl shadow-sm">
+        <div className="flex flex-wrap gap-2 mb-4 text-xs font-semibold">
+          <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full">
+            Scope 1: {Number(data?.scope1 || 0).toFixed(2)} tCO₂e
+          </span>
+          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
+            Scope 2: {Number(data?.scope2 || 0).toFixed(2)} tCO₂e
+          </span>
+          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+            Scope 3: {Number(data?.scope3 || 0).toFixed(2)} tCO₂e
+          </span>
+        </div>
+        <div className="text-sm text-gray-700 leading-7 whitespace-pre-wrap">
+          {data?.action_plan || 'No AI recommendations were returned.'}
+        </div>
+      </div>
     </div>
   );
 }
