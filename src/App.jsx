@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
   submitAssessment,
   signIn,
+  signUp,
   signOut,
 } from './services/api';
 
@@ -29,10 +30,12 @@ const initialEmissions = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(localStorage.getItem('access_token')));
   const [showSignIn, setShowSignIn] = useState(false);
+  const [authMode, setAuthMode] = useState('signin');
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
   const [signInLoading, setSignInLoading] = useState(false);
   const [signInError, setSignInError] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
 
   const [activeTab, setActiveTab] = useState('landing');
   const [step, setStep] = useState(1);
@@ -70,25 +73,38 @@ export default function App() {
   };
 
   const openSignIn = () => {
-    setSignInError(''); setSignInEmail(''); setSignInPassword(''); setShowSignIn(true);
+    setAuthMode('signin'); setSignInError(''); setAuthMessage(''); setSignInEmail(''); setSignInPassword(''); setShowSignIn(true);
+  };
+  const switchAuthMode = (mode) => {
+    setAuthMode(mode); setSignInError(''); setAuthMessage('');
   };
   const closeSignIn = () => {
     if (signInLoading) return;
-    setShowSignIn(false); setSignInError('');
+    setShowSignIn(false); setSignInError(''); setAuthMessage('');
   };
   const handleGetStarted = () => {
     if (!isLoggedIn) { openSignIn(); return; }
     setActiveTab('landing'); setStep(2);
   };
-  const handleSignIn = async (event) => {
-    event.preventDefault(); setSignInError('');
+  const handleAuthSubmit = async (event) => {
+    event.preventDefault(); setSignInError(''); setAuthMessage('');
     const email = signInEmail.trim(); const password = signInPassword;
     if (!email || !password) { setSignInError('Please enter your email and password.'); return; }
     setSignInLoading(true);
     try {
-      await signIn(email, password); setIsLoggedIn(true); setShowSignIn(false); setSignInEmail(''); setSignInPassword(''); setActiveTab('landing'); setStep(2);
+      if (authMode === 'signup') {
+        const result = await signUp(email, password);
+        if (result?.session?.access_token) {
+          setIsLoggedIn(true); setShowSignIn(false); setSignInEmail(''); setSignInPassword(''); setActiveTab('landing'); setStep(2);
+        } else {
+          setAuthMessage('Account created. Please check your email to confirm your account, then sign in.');
+          setAuthMode('signin'); setSignInPassword('');
+        }
+      } else {
+        await signIn(email, password); setIsLoggedIn(true); setShowSignIn(false); setSignInEmail(''); setSignInPassword(''); setActiveTab('landing'); setStep(2);
+      }
     } catch (error) {
-      console.error('Sign in error:', error); setSignInError(error?.message || 'Sign in failed. Please check your email and password.');
+      console.error('Authentication error:', error); setSignInError(error?.message || 'Unable to continue. Please try again.');
     } finally { setSignInLoading(false); }
   };
   const handleDashboardAccess = () => {
@@ -169,7 +185,7 @@ export default function App() {
 
       {showSignIn && (
         <div className="signin-overlay" role="dialog" aria-modal="true" aria-labelledby="signin-title" onClick={closeSignIn}>
-          <div className="signin-modal" onClick={(event)=>event.stopPropagation()}><button type="button" className="signin-close" onClick={closeSignIn}>×</button><div className="badge">✦ CARBONAI</div><h2 id="signin-title">Welcome back.</h2><p>Sign in to continue your carbon assessment.</p><form onSubmit={handleSignIn}><div className="form-group"><label>Email</label><input type="email" value={signInEmail} onChange={(e)=>setSignInEmail(e.target.value)} autoComplete="email" /></div><div className="form-group"><label>Password</label><input type="password" value={signInPassword} onChange={(e)=>setSignInPassword(e.target.value)} autoComplete="current-password" /></div>{signInError&&<div className="signin-error">{signInError}</div>}<button type="submit" className="carbonai-primary signin-submit" disabled={signInLoading}>{signInLoading?'Signing in...':'Sign in'} <span>→</span></button></form></div>
+          <div className="signin-modal" onClick={(event)=>event.stopPropagation()}><button type="button" className="signin-close" onClick={closeSignIn}>×</button><div className="badge">✦ CARBONAI</div><h2 id="signin-title">{authMode === 'signin' ? 'Welcome back.' : 'Create your account.'}</h2><p>{authMode === 'signin' ? 'Sign in to continue your carbon assessment.' : 'Create an account to save and access your assessment.'}</p><form onSubmit={handleAuthSubmit}><div className="form-group"><label>Email</label><input type="email" value={signInEmail} onChange={(e)=>setSignInEmail(e.target.value)} autoComplete="email" /></div><div className="form-group"><label>Password</label><input type="password" value={signInPassword} onChange={(e)=>setSignInPassword(e.target.value)} autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} minLength="6" /></div>{signInError&&<div className="signin-error">{signInError}</div>}{authMessage&&<div className="signin-success">{authMessage}</div>}<button type="submit" className="carbonai-primary signin-submit" disabled={signInLoading}>{signInLoading ? 'Please wait...' : authMode === 'signin' ? 'Sign in' : 'Create account'} <span>→</span></button></form><p className="signin-switch">{authMode === 'signin' ? <>Don't have an account? <button type="button" onClick={()=>switchAuthMode('signup')}>Create one</button></> : <>Already have an account? <button type="button" onClick={()=>switchAuthMode('signin')}>Sign in</button></>}</p></div>
         </div>
       )}
     </div>
