@@ -1,7 +1,11 @@
 import os
+import logging
+import httpx
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from supabase import create_client, Client
+from supabase_auth.errors import AuthApiError, AuthRetryableError
 from dotenv import load_dotenv
 from ai_service import generate_action_plan
 
@@ -24,6 +28,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(httpx.RequestError)
+@app.exception_handler(AuthRetryableError)
+async def upstream_unavailable(request, exc):
+    logging.getLogger(__name__).warning("Upstream unavailable: %s", type(exc).__name__)
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "CarbonAI's data service is temporarily unavailable. Please try again shortly."},
+        headers={"Retry-After": "30"},
+    )
+
+
+@app.exception_handler(AuthApiError)
+async def auth_error(request, exc):
+    if exc.status >= 500:
+        return await upstream_unavailable(request, exc)
+    return JSONResponse(status_code=exc.status, content={"detail": exc.message})
+
 
 @app.get("/")
 def read_root():
@@ -187,6 +209,8 @@ def get_current_user(authorization: str = Header(...)):
         if not user_response or not user_response.user:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
         return user_response.user
+    except (httpx.RequestError, AuthRetryableError):
+        raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
