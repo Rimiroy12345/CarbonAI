@@ -5,6 +5,7 @@ import ActionPlanList from '../components/recommendations/ActionPlanList';
 import './Dashboard.css';
 
 export default function Dashboard({ companyId = null, onRestart }) {
+  const [view, setView] = useState('overview');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,6 +67,7 @@ export default function Dashboard({ companyId = null, onRestart }) {
 
   return (
     <main className="dashboard-page">
+      <aside className="workspace-nav"><span className="workspace-title">WORKSPACE</span>{[['overview','Overview'],['scenarios','Scenario planner'],['actions','Action plan']].map(([key,label]) => <button key={key} className={view === key ? 'selected' : ''} onClick={() => setView(key)}>{label}<span>↗</span></button>)}<div className="workspace-note">A clear baseline.<br />A considered next step.</div><button onClick={onRestart}>New assessment <span>+</span></button></aside>
       <div className="dashboard-shell">
         <header className="dashboard-header">
           <div>
@@ -79,7 +81,7 @@ export default function Dashboard({ companyId = null, onRestart }) {
           </button>
         </header>
 
-        <section className="dashboard-metrics" aria-label="Carbon footprint summary">
+        {view === 'overview' && <section className="dashboard-metrics" aria-label="Carbon footprint summary">
           <article className="dashboard-metric dashboard-metric-featured">
             <span>Total emissions</span>
             <strong>{totalTco2e.toFixed(2)} tCO₂e</strong>
@@ -100,10 +102,10 @@ export default function Dashboard({ companyId = null, onRestart }) {
             <strong>{waste.toFixed(1)} kg</strong>
             <small>CO₂e annually</small>
           </article>
-        </section>
+        </section>}
 
-        <WhatIfSimulator companyId={data.company_id} baseline={breakdown} />
-        <ActionPlanList companyId={data.company_id} />
+        {view !== 'actions' && <WhatIfSimulator companyId={data.company_id} baseline={breakdown} />}
+        {view !== 'scenarios' && <ActionPlanList companyId={data.company_id} />}
       </div>
     </main>
   );
