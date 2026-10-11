@@ -9,6 +9,13 @@ def records(values):
 
 class ForecastTests(unittest.TestCase):
     def setUp(self): self.factors = {key:1 for key in CATEGORIES}
+    def test_two_years_returns_unvalidated_baseline(self):
+        result=forecast_history(records([100,150]),self.factors,'1')
+        self.assertEqual(result['status'],'ready')
+        self.assertTrue(result['preliminary'])
+        self.assertEqual(result['activities'][0]['predicted_quantity'],150)
+        self.assertNotIn('holdout_year',result)
+        self.assertEqual(forecast_history(records([100]),self.factors,'0')['status'],'insufficient_history')
     def test_true_linear_series_is_learned(self):
         result=forecast_history(records([100,110,120,130,140,150]),self.factors,'5')
         self.assertEqual(result['status'],'ready')
@@ -22,7 +29,8 @@ class ForecastTests(unittest.TestCase):
     def test_repeated_versions_do_not_add_years(self):
         history=records([1,2,3,4,5]); history.append(dict(history[-1],id='duplicate',created_at='new'))
         result=forecast_history(history,self.factors,'duplicate')
-        self.assertEqual(result['status'],'insufficient_history')
+        self.assertEqual(result['status'],'ready')
+        self.assertTrue(result['preliminary'])
         self.assertEqual(result['years_available'],5)
     def test_future_data_is_excluded(self):
         history=records([100,110,120,130,140,150,999999])
