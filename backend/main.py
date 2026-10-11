@@ -222,6 +222,7 @@ def get_my_profile(current_user = Depends(get_current_user)):
     return {
         "id": current_user.id,
         "email": current_user.email,
+        "can_view_management": __import__("management").management_access(current_user),
     }
 
 
@@ -658,3 +659,22 @@ def get_forecast(company_id: str, current_user=Depends(get_current_user)):
             if key in CATEGORIES: values[key] = values.get(key, 0) + float(entry["value"])
         row["values"] = values
     return forecast_history(history, get_factor_map(selected["industry"]), company_id)
+
+
+@app.get("/management/{company_id}")
+def get_management_dashboard(company_id: str, current_user=Depends(get_current_user)):
+    from management import management_access, summarize
+    if not management_access(current_user):
+        raise HTTPException(status_code=403, detail="Management view requires workspace owner or management access.")
+    data = get_dashboard_results(company_id=company_id, current_user=current_user)
+    records = owned_companies(current_user.id)
+    selected = next(row for row in records if row["id"] == company_id)
+    root = selected.get("forecast_series_id") or selected["id"]
+    year = selected.get("reporting_year")
+    candidates = [row for row in records if year is not None and row.get("reporting_year") == year - 1
+        and (row.get("forecast_series_id") or row["id"]) == root and row["industry"] == selected["industry"]]
+    previous = None
+    if candidates:
+        prior = max(candidates, key=lambda row: (row["created_at"],row["id"]))
+        previous = get_dashboard_results(company_id=prior["id"], current_user=current_user)
+    return summarize(data, previous)
