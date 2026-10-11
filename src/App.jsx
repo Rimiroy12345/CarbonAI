@@ -71,6 +71,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('landing');
   const [step, setStep] = useState(1);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const [loading, setLoading] = useState(false);
   const [company, setCompany] = useState(initialCompany);
   const [emissions, setEmissions] = useState(initialEmissions);
@@ -86,6 +87,7 @@ export default function App() {
   };
 
   const restartAssessment = () => {
+    setShowManualEntry(false);
     setCompany({ ...initialCompany });
     setEmissions({ ...initialEmissions });
     setAiRecommendation('');
@@ -145,6 +147,7 @@ export default function App() {
   };
   const handleLogout = () => {
     signOut(); setIsLoggedIn(false); setActiveTab('landing'); setStep(1);
+    setShowManualEntry(false);
     setCompany({ ...initialCompany }); setEmissions({ ...initialEmissions }); setAiRecommendation(''); setAssessmentResult(null);
   };
   const handleCalculate = async () => {
@@ -200,7 +203,7 @@ export default function App() {
           )}
 
           {step === 3 && (
-            <main className="assessment-page"><section className="assessment-section"><div className="assessment-card"><div className="badge">✦ EMISSIONS DATA</div><h1>Measure your<br /><span>carbon footprint.</span></h1><p className="assessment-description">Enter your annual business activity data. Estimates are okay — CarbonAI will calculate the resulting footprint.</p><DocumentUpload onApply={(values) => setEmissions((previous) => ({ ...previous, ...values }))} /><div className="emissions-grid">{emissionFields.map((field)=><div className="emission-group" key={field.key}><label>{field.label}</label><div className="input-with-unit"><input type="number" min="0" placeholder={field.placeholder} value={emissions[field.key]} onChange={(e)=>updateEmissions(field.key,e.target.value)} /><span>{field.unit}</span></div></div>)}</div><div className="assessment-actions"><button type="button" className="carbonai-secondary" onClick={()=>setStep(2)}>← Back</button><button type="button" className="carbonai-primary" onClick={handleCalculate} disabled={loading}>{loading?'Calculating...':'Calculate footprint'} <span>→</span></button></div></div></section></main>
+            <main className="assessment-page"><section className="assessment-section"><div className="assessment-card"><div className="badge">✦ EMISSIONS DATA</div><h1>Measure your<br /><span>carbon footprint.</span></h1><p className="assessment-description">Upload company documents to build your annual activity baseline, or enter your numbers manually below.</p><DocumentUpload onApply={(values) => { setEmissions((previous) => ({ ...previous, ...values })); setShowManualEntry(true); }} /><button type="button" className="manual-entry-toggle" aria-expanded={showManualEntry} aria-controls="manual-emissions" onClick={() => setShowManualEntry((previous) => !previous)}>{showManualEntry ? 'Hide manual entry fields ↑' : 'Click here to manually enter your numbers ↓'}</button>{showManualEntry && <div id="manual-emissions"><p className="manual-entry-note">Enter or review annual activity totals. You can complete your assessment entirely here without uploading a document.</p><div className="emissions-grid">{emissionFields.map((field)=><div className="emission-group" key={field.key}><label>{field.label}</label><div className="input-with-unit"><input type="number" min="0" placeholder={field.placeholder} value={emissions[field.key]} onChange={(e)=>updateEmissions(field.key,e.target.value)} /><span>{field.unit}</span></div></div>)}</div></div>}<div className="assessment-actions"><button type="button" className="carbonai-secondary" onClick={()=>setStep(2)}>← Back</button><button type="button" className="carbonai-primary" onClick={handleCalculate} disabled={loading}>{loading?'Calculating...':'Calculate footprint'} <span>→</span></button></div></div></section></main>
           )}
 
           {step === 4 && assessmentResult && (
