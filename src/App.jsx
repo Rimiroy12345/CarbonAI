@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
+  api,
   submitAssessment,
   signIn,
   signUp,
@@ -73,6 +74,14 @@ export default function App() {
   const [step, setStep] = useState(1);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [reportingYear, setReportingYear] = useState('');
+  const [historySeries, setHistorySeries] = useState([]);
+  const [seriesId, setSeriesId] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    if (isLoggedIn) api.get('/forecast-series').then(result => { if (!cancelled) setHistorySeries(result.data); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isLoggedIn, step]);
   const [company, setCompany] = useState(initialCompany);
   const [emissions, setEmissions] = useState(initialEmissions);
   const [aiRecommendation, setAiRecommendation] = useState('');
@@ -87,6 +96,7 @@ export default function App() {
   };
 
   const restartAssessment = () => {
+    setReportingYear(''); setSeriesId('');
     setShowManualEntry(false);
     setCompany({ ...initialCompany });
     setEmissions({ ...initialEmissions });
@@ -152,8 +162,10 @@ export default function App() {
   };
   const handleCalculate = async () => {
     if (!isLoggedIn) { openSignIn(); return; }
+    if (!reportingYear || Number(reportingYear) < 1990 || Number(reportingYear) >= new Date().getFullYear()) { alert('Choose the completed calendar year covered by these numbers.'); return; }
     setLoading(true);
     const payload = {
+      reporting_year: Number(reportingYear), forecast_series_id: seriesId || null,
       company_name: company.name, industry: company.industry || 'general', employee_count: company.employees ? parseInt(company.employees, 10) : null,
       location: company.location || null, electricity: parseFloat(emissions.electricity) || 0, natural_gas: parseFloat(emissions.naturalGas) || 0,
       petrol: parseFloat(emissions.petrol) || 0, diesel: parseFloat(emissions.diesel) || 0, air_travel: parseFloat(emissions.flights) || 0,
@@ -195,8 +207,10 @@ export default function App() {
 
           {step === 2 && (
             <main className="setup-page"><section className="setup-section"><div className="setup-card"><div className="badge">✦ CARBONAI SETUP</div><h1>Let's understand<br />your <span>business.</span></h1><p className="setup-description">Tell us a little about your company. CarbonAI will use this information to create your personalized carbon assessment.</p><div className="form-grid">
+            <div className="form-group"><label htmlFor="company-history">Company history</label><select id="company-history" value={seriesId} onChange={event => { setSeriesId(event.target.value); const selected = historySeries.find(item => item.id === event.target.value); if (selected) setCompany(previous => ({...previous, name: selected.name, industry: selected.industry, location: selected.location || ''})); }}><option value="">Start a separate company history</option>{historySeries.map(item => <option key={item.id} value={item.id}>{item.name} · {item.location || 'Location not provided'} · {item.id.slice(0, 8)}</option>)}</select><small>Select the same history when entering past years or another assessment for this business.</small></div>
+            <div className="form-group"><label htmlFor="reporting-year">Reporting year (full calendar year)</label><input id="reporting-year" type="number" min="1990" max={new Date().getFullYear() - 1} required value={reportingYear} onChange={event => setReportingYear(event.target.value)} placeholder="e.g. 2025"/><small>Use annual totals for this year, not the date you save the assessment.</small></div>
             <div className="form-group"><label>Company name</label><input type="text" placeholder="e.g. Acme Technologies" value={company.name} onChange={(e)=>updateCompany('name',e.target.value)} required /></div>
-            <div className="form-group"><label>Industry</label><select value={company.industry} onChange={(e)=>updateCompany('industry',e.target.value)}><option value="">Select industry</option><option>Technology</option><option>Manufacturing</option><option>Finance</option><option>Healthcare</option><option>Retail</option><option>Education</option><option>Other</option></select></div>
+            <div className="form-group"><label>Industry</label><select value={company.industry} onChange={(e)=>updateCompany('industry',e.target.value)}><option value="">Select industry</option><option value="general">General</option><option>Technology</option><option>Manufacturing</option><option>Finance</option><option>Healthcare</option><option>Retail</option><option>Education</option><option>Other</option></select></div>
             <div className="form-group"><label>Number of employees</label><input type="number" min="1" placeholder="e.g. 250" value={company.employees} onChange={(e)=>updateCompany('employees',e.target.value)} /></div>
             <div className="form-group"><label>Location</label><input type="text" placeholder="e.g. Pune, India" value={company.location} onChange={(e)=>updateCompany('location',e.target.value)} /></div>
             </div><button type="button" className="carbonai-primary setup-next" onClick={()=>setStep(3)}>Continue to emissions <span>→</span></button></div></section></main>

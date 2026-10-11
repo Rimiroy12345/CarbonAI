@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, getActionPlan, getDashboardResults, getAssessmentHistory } from '../services/api';
+import Forecast from '../components/Forecast';
 import WhatIfSimulator from '../components/simulator/WhatIfSimulator';
 import ActionPlanList from '../components/recommendations/ActionPlanList';
 import './Dashboard.css';
@@ -101,7 +102,7 @@ export default function Dashboard({ companyId = null, onRestart }) {
 
   return (
     <main className="dashboard-page">
-      <aside className="workspace-nav"><span className="workspace-title">WORKSPACE</span>{[['overview','Overview'],['scenarios','Scenario planner'],['actions','Action plan'],['history','Assessment history']].map(([key,label]) => <button key={key} className={view === key ? 'selected' : ''} onClick={() => setView(key)}>{label}<span>↗</span></button>)}<div className="workspace-note">A clear baseline.<br />A considered next step.</div><button onClick={onRestart}>New assessment <span>+</span></button></aside>
+      <aside className="workspace-nav"><span className="workspace-title">WORKSPACE</span>{[['overview','Overview'],['scenarios','Scenario planner'],['actions','Action plan'],['history','Assessment history'],['forecast','Forecast']].map(([key,label]) => <button key={key} className={view === key ? 'selected' : ''} onClick={() => setView(key)}>{label}<span>↗</span></button>)}<div className="workspace-note">A clear baseline.<br />A considered next step.</div><button onClick={onRestart}>New assessment <span>+</span></button></aside>
       <div className="dashboard-shell">
         <header className="dashboard-header">
           <div>
@@ -141,6 +142,7 @@ export default function Dashboard({ companyId = null, onRestart }) {
 
         {view === 'scenarios' && <WhatIfSimulator companyId={data.company_id} baseline={breakdown} />}
         {(view === 'overview' || view === 'actions') && <ActionPlanList companyId={data.company_id} />}
+        {view === 'forecast' && <Forecast key={data.company_id} companyId={data.company_id} reportingYear={data.reporting_year} />}
         {view === 'history' && <section className="assessment-history"><h2>Saved assessments</h2><p>Each new assessment is saved separately to your account.</p>{historyError && <p role="alert">{historyError}</p>}{history.map(item => <button className="history-report" key={item.company_id} onClick={() => { setSelectedId(item.company_id); setView('overview'); }}><strong>Assessment #{item.number} · {item.company_name}</strong><span>{new Date(item.calculated_at).toLocaleString()} · {Number(item.total_tco2e).toFixed(2)} tCO₂e</span><span>Open report →</span></button>)}<div className="document-buttons">{historyOffset > 0 && <button onClick={() => setHistoryOffset(Math.max(0, historyOffset - 50))}>Newer assessments</button>}{nextOffset !== null && <button onClick={() => setHistoryOffset(nextOffset)}>Older assessments</button>}</div></section>}
       </div>
     </main>

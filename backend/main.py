@@ -3,7 +3,7 @@ import logging
 import httpx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from supabase import create_client, Client
 from supabase_auth.errors import AuthApiError, AuthRetryableError
 from dotenv import load_dotenv
@@ -228,26 +228,46 @@ def get_my_profile(current_user = Depends(get_current_user)):
 # ---- Full assessment submission ----
 
 class AssessmentInput(BaseModel):
+    reporting_year: int = Field(ge=1990, le=2100)
+    forecast_series_id: str | None = None
     company_name: str
     industry: str = "general"
     employee_count: int | None = None
     location: str | None = None
-    electricity: float = 0
-    natural_gas: float = 0
-    petrol: float = 0
-    diesel: float = 0
-    air_travel: float = 0
-    hotels: float = 0
-    commuting: float = 0
-    waste: float = 0
+    electricity: float = Field(default=0, ge=0, allow_inf_nan=False)
+    natural_gas: float = Field(default=0, ge=0, allow_inf_nan=False)
+    petrol: float = Field(default=0, ge=0, allow_inf_nan=False)
+    diesel: float = Field(default=0, ge=0, allow_inf_nan=False)
+    air_travel: float = Field(default=0, ge=0, allow_inf_nan=False)
+    hotels: float = Field(default=0, ge=0, allow_inf_nan=False)
+    commuting: float = Field(default=0, ge=0, allow_inf_nan=False)
+    waste: float = Field(default=0, ge=0, allow_inf_nan=False)
 
 
 @app.post("/assessment")
 def submit_assessment(data: AssessmentInput, current_user = Depends(get_current_user)):
     user_id = current_user.id
 
+    from uuid import uuid4
+    from datetime import date
+    if data.reporting_year >= date.today().year:
+        raise HTTPException(status_code=422, detail="Use a completed calendar year for annual assessment data.")
+    company_id = str(uuid4())
+    series_id = company_id
+    if data.forecast_series_id:
+        anchor = (supabase_admin.table("companies").select("*").eq("id", data.forecast_series_id)
+            .eq("user_id", user_id).limit(1).execute()).data
+        if not anchor:
+            raise HTTPException(status_code=404, detail="Company history not found")
+        business = anchor[0]
+        if (data.company_name.strip(), data.industry, data.location or "") != (business["name"].strip(), business["industry"], business.get("location") or ""):
+            raise HTTPException(status_code=422, detail="Company name, industry and location must match the selected history.")
+        series_id = business.get("forecast_series_id") or business["id"]
     # 1. Create the company record
     company_response = supabase_admin.table("companies").insert({
+        "id": company_id,
+        "reporting_year": data.reporting_year,
+        "forecast_series_id": series_id,
         "user_id": user_id,
         "name": data.company_name,
         "industry": data.industry,
@@ -395,6 +415,7 @@ def get_dashboard_results(company_id: str | None = None, current_user = Depends(
         "industry": company["industry"],
         "location": company.get("location"),
         "employee_count": company.get("employee_count"),
+        "reporting_year": company.get("reporting_year"),
         "total_kgco2e": breakdown["total_kgco2e"],
         "total_tco2e": float(result["total_tco2e"]),
         "category_totals": category_totals,
@@ -568,3 +589,72 @@ def export_assessment_excel(company_id: str, current_user=Depends(get_current_us
     data = get_dashboard_results(company_id=company_id, current_user=current_user)
     return Response(build_workbook(data), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="CarbonAI_Assessment.xlsx"', "Cache-Control": "no-store"})
+
+
+@app.get("/forecast-series")
+def list_forecast_series(current_user=Depends(get_current_user)):
+    records = owned_companies(current_user.id)
+    seen = set()
+    output = []
+    for row in records:
+        root = row.get("forecast_series_id") or row["id"]
+        if root not in seen:
+            seen.add(root)
+            output.append({"id": root, "name": row["name"], "industry": row["industry"], "location": row.get("location")})
+    return output
+
+
+def owned_companies(user_id):
+    rows = []
+    for offset in range(0, 10000, 500):
+        page = (supabase_admin.table("companies").select("*").eq("user_id", user_id)
+            .order("created_at", desc=True).order("id").range(offset, offset + 499).execute()).data
+        rows.extend(page)
+        if len(page) < 500:
+            return rows
+    raise HTTPException(status_code=422, detail="History is too large for this forecasting version.")
+
+
+class ReportingPeriodInput(BaseModel):
+    reporting_year: int = Field(ge=1990, le=2100)
+
+
+@app.patch("/assessments/{company_id}/period")
+def set_reporting_period(company_id: str, data: ReportingPeriodInput, current_user=Depends(get_current_user)):
+    from datetime import date
+    if data.reporting_year >= date.today().year:
+        raise HTTPException(status_code=422, detail="Choose a completed calendar year.")
+    response = (supabase_admin.table("companies").update({"reporting_year": data.reporting_year})
+        .eq("id", company_id).eq("user_id", current_user.id).execute())
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    return {"reporting_year": data.reporting_year}
+
+
+@app.get("/forecast/{company_id}")
+def get_forecast(company_id: str, current_user=Depends(get_current_user)):
+    from forecasting import forecast_history, CATEGORIES
+    records = owned_companies(current_user.id)
+    selected = next((row for row in records if row["id"] == company_id), None)
+    if not selected:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    root = selected.get("forecast_series_id") or selected["id"]
+    history = [row for row in records if (row.get("forecast_series_id") or row["id"]) == root
+        and row["industry"] == selected["industry"]]
+    if selected.get("reporting_year") is None:
+        return forecast_history(history, {}, company_id)
+    versions = {}
+    for row in sorted(history, key=lambda row: (row["created_at"], row["id"])):
+        year = row.get("reporting_year")
+        if year is not None and year <= selected["reporting_year"]:
+            versions[year] = row
+    versions[selected["reporting_year"]] = selected
+    history = list(versions.values())
+    for row in history:
+        entries = (supabase_admin.table("emission_entries").select("category,value").eq("company_id", row["id"]).execute()).data
+        values = {}
+        for entry in entries:
+            key = entry["category"]
+            if key in CATEGORIES: values[key] = values.get(key, 0) + float(entry["value"])
+        row["values"] = values
+    return forecast_history(history, get_factor_map(selected["industry"]), company_id)
