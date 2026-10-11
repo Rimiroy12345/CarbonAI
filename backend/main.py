@@ -398,6 +398,11 @@ def get_dashboard_results(company_id: str | None = None, current_user = Depends(
         "total_kgco2e": breakdown["total_kgco2e"],
         "total_tco2e": float(result["total_tco2e"]),
         "category_totals": category_totals,
+        "activities": [{"category": entry["category"], "quantity": float(entry["value"]),
+            "unit": entry.get("unit", ""), "factor": factor_map.get(entry["category"]),
+            "scope": 1 if entry["category"] in {"natural_gas", "petrol", "diesel"} else 2 if entry["category"] == "electricity" else 3,
+            "emissions_kgco2e": round(float(entry["value"]) * factor_map.get(entry["category"], 0), 2)}
+            for entry in entries_response.data],
         "breakdown": {
             "energy_kg": breakdown["energy_kg"],
             "travel_kg": breakdown["travel_kg"],
@@ -554,3 +559,12 @@ def verify_cloud_document_extraction():
         except Exception as error:
             logger.warning("Cloud document self-check failed error_type=%s", type(error).__name__)
     Thread(target=check, daemon=True).start()
+
+
+@app.get("/reports/{company_id}/excel")
+def export_assessment_excel(company_id: str, current_user=Depends(get_current_user)):
+    from reports import build_workbook
+    from fastapi.responses import Response
+    data = get_dashboard_results(company_id=company_id, current_user=current_user)
+    return Response(build_workbook(data), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="CarbonAI_Assessment.xlsx"', "Cache-Control": "no-store"})
