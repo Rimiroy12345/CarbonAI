@@ -51,6 +51,17 @@ class DocumentTests(unittest.TestCase):
         self.assertEqual(result['records'][0]['value'], 100)
         self.assertEqual(result['records'][0]['period'], 'Not confirmed')
 
+    def test_reporting_years_are_grounded_and_multiyear_rows_need_review(self):
+        rows = extract_document('annual.csv', b'Electricity,100,kWh,Annual 2024\nWaste,50,kg,Annual 2025')['records']
+        self.assertEqual([row['reporting_year'] for row in rows], [2024, 2025])
+        context = extract_document('annual.csv', b'Annual report 2024\nElectricity,100,kWh')['records'][0]
+        self.assertEqual(context['reporting_year'], 2024)
+        self.assertEqual(context['year_source'], 'document context')
+        ambiguous = extract_document('annual.csv', b'Electricity,100,kWh,Annual 2024 and annual 2025')['records'][0]
+        self.assertIsNone(ambiguous['reporting_year'])
+        quantity = extract_document('annual.csv', b'Electricity,2024,kWh')['records'][0]
+        self.assertIsNone(quantity['reporting_year'])
+
     def test_file_limits_and_invalid_formats(self):
         for name,content in [('bad.xls',b'bad'),('bad.pdf',b'bad'),('empty.csv',b''),('large.csv',b'x'*(MAX_BYTES+1)),('bad.xlsx',b'bad')]:
             with self.subTest(name=name), self.assertRaises(ValueError): extract_document(name,content)
