@@ -491,3 +491,22 @@ def get_action_plan(current_user=Depends(get_current_user)):
         "scope3": scope3_tco2e,
         "action_plan": action_plan,
     }
+
+
+# Document extraction is authenticated and does not persist uploaded files.
+from fastapi import UploadFile, File
+from document_intelligence import extract_document, MAX_BYTES
+from ai_service import generate_document_response
+
+@app.post("/documents/extract")
+def extract_uploaded_document(file: UploadFile = File(...), current_user = Depends(get_current_user)):
+    try:
+        content = file.file.read(MAX_BYTES + 1)
+        return extract_document(file.filename or "document", content, generate_document_response)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception:
+        logging.getLogger(__name__).warning("Document parsing failed", exc_info=False)
+        raise HTTPException(status_code=422, detail="Unable to read this file. Check it is valid and upload an unlocked PDF, XLSX, or UTF-8 CSV.")
+    finally:
+        file.file.close()
