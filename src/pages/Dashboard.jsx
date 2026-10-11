@@ -21,8 +21,9 @@ export default function Dashboard({ companyId = null, onRestart }) {
     try {
       if (format === 'pdf') {
         let analysis = null;
-        try { const response = await getActionPlan(data.company_id); analysis = JSON.parse(response.action_plan); } catch { /* Explicitly label unavailable AI in the PDF. */ }
-        buildAssessmentPdf(data, analysis).save(`CarbonAI_${data.company_id}.pdf`);
+        try { const response = await getActionPlan(data.company_id); analysis = { ...JSON.parse(response.action_plan), captured_at: response.captured_at }; } catch { /* Explicitly label unavailable AI in the PDF. */ }
+        const reportData = await getDashboardResults(data.company_id);
+        buildAssessmentPdf(reportData, analysis).save(`CarbonAI_${data.company_id}.pdf`);
       } else {
         const response = await api.get(`/reports/${data.company_id}/excel`, { responseType: 'blob' });
         const url = URL.createObjectURL(response.data);
@@ -123,6 +124,7 @@ export default function Dashboard({ companyId = null, onRestart }) {
           </button>
         </header>
 
+        <aside className="document-message"><strong>Saved assessment snapshots</strong>{data.snapshot?.calculation_captured_at ? <p>Your activity inputs and emission factors are preserved for consistent results when reopened or downloaded. Captured {new Date(data.snapshot.calculation_captured_at).toLocaleString()}.{data.snapshot.provenance === 'captured_later' ? ' This older assessment was captured later; its original factors cannot be recovered and its saved total may differ.' : ''}</p> : <p>This older assessment has no original calculation snapshot. It currently uses today’s factors; the first AI request captures the available calculation context now.</p>}<p>{data.snapshot?.ai_captured_at ? `AI analysis saved ${new Date(data.snapshot.ai_captured_at).toLocaleString()}. Reopening returns that saved advice.` : 'The first successful AI analysis is saved with this assessment and reused on later visits.'}</p></aside>
         <div className="document-buttons"><button className="dashboard-button dashboard-button-secondary" disabled={Boolean(exporting)} onClick={() => downloadReport('pdf')}>{exporting === 'pdf' ? 'Preparing PDF...' : 'Download assessment PDF'}</button><button className="dashboard-button dashboard-button-secondary" disabled={Boolean(exporting)} onClick={() => downloadReport('excel')}>{exporting === 'excel' ? 'Preparing Excel...' : 'Download assessment Excel'}</button></div>{exportError && <p role="alert">{exportError}</p>}
         {view === 'overview' && <section className="dashboard-metrics" aria-label="Carbon footprint summary">
           <article className="dashboard-metric dashboard-metric-featured">

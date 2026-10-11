@@ -8,6 +8,7 @@ from supabase import create_client, Client
 from supabase_auth.errors import AuthApiError, AuthRetryableError
 from dotenv import load_dotenv
 from ai_service import generate_action_plan
+from snapshots import calculation_snapshot, calculation_source
 
 load_dotenv()
 
@@ -320,6 +321,7 @@ def submit_assessment(data: AssessmentInput, current_user = Depends(get_current_
         "company_id": company_id,
         "total_tco2e": total_tco2e,
         "category_breakdown": breakdown["breakdown_pct"],
+        "calculation_snapshot": calculation_snapshot(factor_map, entries_to_insert),
     }).execute()
 
     return {
@@ -388,9 +390,12 @@ def get_dashboard_results(company_id: str | None = None, current_user = Depends(
         .execute()
     )
 
-    factor_map = get_factor_map(company.get("industry") or "general")
+    result = result_response.data[0]
+    snapshot = result.get("calculation_snapshot")
+    source_entries, factor_map = calculation_source(result, entries_response.data,
+        {} if snapshot else get_factor_map(company.get("industry") or "general"))
     category_totals = {}
-    for entry in entries_response.data:
+    for entry in source_entries:
         category = entry["category"]
         value = float(entry["value"])
         category_totals[category] = round(
@@ -424,7 +429,7 @@ def get_dashboard_results(company_id: str | None = None, current_user = Depends(
             "unit": entry.get("unit", ""), "factor": factor_map.get(entry["category"]),
             "scope": 1 if entry["category"] in {"natural_gas", "petrol", "diesel"} else 2 if entry["category"] == "electricity" else 3,
             "emissions_kgco2e": round(float(entry["value"]) * factor_map.get(entry["category"], 0), 2)}
-            for entry in entries_response.data],
+            for entry in source_entries],
         "breakdown": {
             "energy_kg": breakdown["energy_kg"],
             "travel_kg": breakdown["travel_kg"],
@@ -432,6 +437,7 @@ def get_dashboard_results(company_id: str | None = None, current_user = Depends(
         },
         "breakdown_pct": breakdown["breakdown_pct"],
         "calculated_at": result["calculated_at"],
+        "snapshot": {"calculation_captured_at": snapshot.get("captured_at") if snapshot else None, "provenance": snapshot.get("provenance") if snapshot else "legacy_unsaved", "ai_captured_at": (result.get("ai_snapshot") or {}).get("captured_at")},
     }
 
 
@@ -481,6 +487,14 @@ def get_action_plan(company_id: str | None = None, current_user=Depends(get_curr
     company = company_response.data[0]
     company_id = company["id"]
 
+    result_rows = (supabase_admin.table("results").select("*").eq("company_id", company_id)
+        .order("calculated_at", desc=True).limit(1).execute()).data
+    if not result_rows:
+        raise HTTPException(status_code=404, detail="Assessment result not found")
+    stored_result = result_rows[0]
+    if stored_result.get("ai_snapshot"):
+        return stored_result["ai_snapshot"]["analysis"]
+
     entries_response = (
         supabase_admin.table("emission_entries")
         .select("*")
@@ -488,8 +502,11 @@ def get_action_plan(company_id: str | None = None, current_user=Depends(get_curr
         .execute()
     )
 
-    entries = entries_response.data
-    factor_map = get_factor_map(company.get("industry") or "general")
+    if not stored_result.get("calculation_snapshot"):
+        captured = calculation_snapshot(get_factor_map(company.get("industry") or "general"), entries_response.data, "captured_later")
+        supabase_admin.table("results").update({"calculation_snapshot": captured}).eq("id", stored_result["id"]).is_("calculation_snapshot", "null").execute()
+        stored_result = (supabase_admin.table("results").select("*").eq("id", stored_result["id"]).limit(1).execute()).data[0]
+    entries, factor_map = calculation_source(stored_result, entries_response.data, {})
 
     scope1_categories = {"natural_gas", "petrol", "diesel"}
     scope2_categories = {"electricity"}
@@ -501,7 +518,7 @@ def get_action_plan(company_id: str | None = None, current_user=Depends(get_curr
     for entry in entries:
         category = entry["category"]
         value = float(entry["value"])
-        emissions_kgco2e = value * factor_map.get(category, 0)
+        emissions_kgco2e = round(value * factor_map.get(category, 0), 2)
 
         if category in scope1_categories:
             scope1 += emissions_kgco2e
@@ -535,7 +552,7 @@ def get_action_plan(company_id: str | None = None, current_user=Depends(get_curr
         raise HTTPException(status_code=503, detail="AI analysis is temporarily unavailable. Your assessment is saved; please try again shortly.") from error
 
 
-    return {
+    analysis = {
         "company_id": company_id,
         "company_name": company["name"],
         "industry": company["industry"],
@@ -544,6 +561,14 @@ def get_action_plan(company_id: str | None = None, current_user=Depends(get_curr
         "scope3": scope3_tco2e,
         "action_plan": action_plan,
     }
+    from datetime import datetime, timezone
+    captured_at = datetime.now(timezone.utc).isoformat()
+    analysis["captured_at"] = captured_at
+    analysis["calculation_provenance"] = stored_result["calculation_snapshot"]["provenance"]
+    supabase_admin.table("results").update({"ai_snapshot": {"version": 1, "captured_at": captured_at, "analysis": analysis}}).eq("id", stored_result["id"]).is_("ai_snapshot", "null").execute()
+    winner = (supabase_admin.table("results").select("ai_snapshot").eq("id", stored_result["id"]).limit(1).execute()).data[0]
+    return winner["ai_snapshot"]["analysis"]
+
 
 
 # Document extraction is authenticated and does not persist uploaded files.

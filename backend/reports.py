@@ -10,7 +10,7 @@ def build_workbook(data):
     summary.append(['CarbonAI assessment', data['company_name']])
     for label, key in [('Assessment ID', 'company_id'), ('Saved date (UTC)', 'calculated_at'), ('Industry', 'industry'), ('Location', 'location'), ('Employees', 'employee_count'), ('Saved total tCO2e', 'total_tco2e')]:
         summary.append([label, data.get(key)])
-    summary.append(['Scope', 'Current-factor tCO2e'])
+    summary.append(['Scope', 'Calculation-context tCO2e'])
     activities = workbook.create_sheet('Activities')
     activities.append(['Activity', 'Quantity', 'Unit', 'Scope', 'Factor kgCO2e per unit', 'Calculated kgCO2e'])
     for index, row in enumerate(data['activities'], 2):
@@ -18,12 +18,14 @@ def build_workbook(data):
     last = len(data['activities']) + 1
     for scope in [1, 2, 3]:
         summary.append([f'Scope {scope}', f'=SUMIF(Activities!D2:D{last},{scope},Activities!F2:F{last})/1000'])
-    summary.append(['Current-factor total tCO2e', '=SUM(B9:B11)'])
+    summary.append(['Calculation-context total tCO2e', '=SUM(B9:B11)'])
     notes = workbook.create_sheet('Method')
     notes.append(['Method and limitations'])
+    snapshot = data.get('snapshot') or {}
+    notes.append([f"Calculation snapshot captured: {snapshot.get('calculation_captured_at') or 'Not retained'}; provenance: {snapshot.get('provenance', 'legacy_unsaved')}"]) 
     for note in ['Inputs: user-entered or reviewed annual activity totals for the selected assessment.',
-        'Factors: current CarbonAI database factors; historical factor snapshots are not retained.',
-        'Saved total may differ from current-factor recalculation. Formula cells recalculate when opened in Excel.',
+        'Factors: saved assessment snapshot where available; otherwise current factors for a legacy report.',
+        'Legacy snapshots captured later may differ from the original saved total. Formula cells recalculate when opened in Excel.',
         'Scope 1 assumes company-owned or controlled natural gas, petrol and diesel.',
         'Scope 2 includes purchased electricity; no market-based claim.',
         'Scope 3 covers reported air travel, hotels, commuting and waste only, not a complete inventory.',

@@ -18,18 +18,20 @@ export function buildAssessmentPdf(data, analysis = null) {
   text('CarbonAI | Assessment report', true);
   text(data.company_name, true);
   text(`Assessment ID: ${data.company_id}\nSaved: ${data.calculated_at}\nExported: ${new Date().toISOString()}\nIndustry: ${data.industry}\nLocation: ${data.location || 'Not provided'}\nEmployees: ${data.employee_count ?? 'Not provided'}`);
+  text(`Calculation snapshot: ${data.snapshot?.calculation_captured_at || 'Not retained'} | ${data.snapshot?.provenance || 'legacy_unsaved'}`);
   text('Calculated footprint', true);
-  text(`Saved footprint: ${Number(data.total_tco2e).toFixed(4)} tCO2e\nRecalculated with current factors: ${(data.total_kgco2e / 1000).toFixed(4)} tCO2e`);
+  text(`Saved footprint: ${Number(data.total_tco2e).toFixed(4)} tCO2e\nCalculation-context footprint: ${(data.total_kgco2e / 1000).toFixed(4)} tCO2e`);
   for (const scope of [1, 2, 3]) {
     const rows = data.activities.filter(row => row.scope === scope);
     text(`Scope ${scope}: ${(rows.reduce((sum, row) => sum + row.emissions_kgco2e, 0) / 1000).toFixed(4)} tCO2e`, true);
     for (const row of rows) text(`${row.category.replaceAll('_', ' ')}: ${row.quantity} ${row.unit} x ${row.factor ?? 'Missing factor'} kgCO2e/${row.unit} = ${row.emissions_kgco2e} kgCO2e`);
   }
   text('Method and boundaries', true);
-  text('Annual activity quantities multiplied by current CarbonAI database factors. Historical factors are not versioned; recalculated results may differ from the saved footprint. Scope 1 assumes owned or controlled fuel use. Scope 2 covers purchased electricity. Scope 3 includes reported travel, hotels, commuting and waste only; this is not a complete inventory. Inputs were reviewed or entered by the user; uploaded source documents are not retained. This report contains no ML forecast or verified reduction claim.');
+  text('Annual activity quantities multiplied by the assessment calculation factors. New assessments preserve their original inputs and factors. Older assessments captured later may differ from their original saved total. Scope 1 assumes owned or controlled fuel use. Scope 2 covers purchased electricity. Scope 3 includes reported travel, hotels, commuting and waste only; this is not a complete inventory. Inputs were reviewed or entered by the user; uploaded source documents are not retained. This report contains no ML forecast or verified reduction claim.');
   if (analysis) {
     text('AI-generated interpretation', true);
-    text('Generated from this assessment at report export; advice may differ from previous sessions. Review recommendations and assumptions before acting.');
+    text('Saved AI advice is reused for this assessment; the report export does not regenerate existing advice. Review recommendations and assumptions before acting.');
+    text(`AI analysis saved: ${analysis.captured_at || 'Not available'}`);
     text(analysis.executive_summary);
     for (const item of analysis.scope_analysis || []) {
       text(`Scope ${item.scope} analysis`, true);

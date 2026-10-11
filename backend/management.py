@@ -18,4 +18,4 @@ def summarize(data, previous=None):
             'change_tco2e': round(total-old,4), 'change_pct': round((total-old)/old*100,1) if old else None}
     return {'reporting_year': data.get('reporting_year'), 'scopes': scopes, 'current_tco2e': round(total,4),
         'drivers': drivers, 'comparison': comparison,
-        'method_note': 'Scope totals and annual comparisons use current factors. Saved totals may differ. Changes reflect reported activity, not verified intervention impact.'}
+        'method_note': 'Scope totals use each assessment’s saved factors where available; older unsaved assessments use current factors. Annual comparisons may reflect both activity and factor changes. Changes are not verified intervention impact.'}
