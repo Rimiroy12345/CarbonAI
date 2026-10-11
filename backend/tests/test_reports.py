@@ -8,13 +8,16 @@ from reports import build_workbook
 
 class ReportTests(unittest.TestCase):
     def test_formulas_units_and_injection_protection(self):
-        data={'company_name':'=HYPERLINK("https://example.com")','company_id':'test', 'calculated_at':'2026-10-11','total_tco2e':2,
+        data={'company_name':'=HYPERLINK("https://example.com")','company_id':'test', 'calculated_at':'2026-10-11','total_tco2e':2,'reporting_year':2025,
             'activities':[{'category':'electricity','quantity':1000,'unit':'kWh','scope':2,'factor':0.7}]}
         workbook=load_workbook(io.BytesIO(build_workbook(data)))
         self.assertEqual(workbook['Summary']['B1'].data_type,'s')
         self.assertEqual(workbook['Activities']['F2'].value,'=ROUND(B2*E2,2)')
         self.assertEqual(workbook['Activities']['C2'].value,'kWh')
-        self.assertEqual(workbook['Summary']['B12'].value,'=SUM(B9:B11)')
+        self.assertEqual(workbook['Summary']['B13'].value,'=SUM(B10:B12)')
+        self.assertEqual(workbook['Summary']['A4'].value, 'Reporting year (January–December)')
+        self.assertEqual(workbook['Summary']['B4'].value, 2025)
+        self.assertEqual(workbook['Summary']['B10'].data_type, 'f')
         self.assertEqual(workbook.sheetnames,['Summary','Activities','Method'])
 
 if __name__ == '__main__': unittest.main()

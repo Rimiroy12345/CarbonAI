@@ -6,6 +6,7 @@ import WhatIfSimulator from '../components/simulator/WhatIfSimulator';
 import ActionPlanList from '../components/recommendations/ActionPlanList';
 import './Dashboard.css';
 import { buildAssessmentPdf } from '../services/reports';
+import { parseActionPlan } from '../services/actionPlan';
 
 export default function Dashboard({ companyId = null, onRestart }) {
   const [canManage, setCanManage] = useState(false);
@@ -21,7 +22,7 @@ export default function Dashboard({ companyId = null, onRestart }) {
     try {
       if (format === 'pdf') {
         let analysis = null;
-        try { const response = await getActionPlan(data.company_id); analysis = { ...JSON.parse(response.action_plan), captured_at: response.captured_at }; } catch { /* Explicitly label unavailable AI in the PDF. */ }
+        try { const response = await getActionPlan(data.company_id); const plan = parseActionPlan(response.action_plan); analysis = plan ? { ...plan, captured_at: response.captured_at } : null; } catch { /* Explicitly label unavailable AI in the PDF. */ }
         const reportData = await getDashboardResults(data.company_id);
         buildAssessmentPdf(reportData, analysis).save(`CarbonAI_${data.company_id}.pdf`);
       } else {
