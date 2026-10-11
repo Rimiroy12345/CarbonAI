@@ -487,13 +487,26 @@ def get_action_plan(company_id: str | None = None, current_user=Depends(get_curr
     scope2_tco2e = round(scope2 / 1000, 4)
     scope3_tco2e = round(scope3 / 1000, 4)
 
-    action_plan = generate_action_plan(
-        company_name=company["name"],
-        industry=company["industry"],
-        scope1=scope1_tco2e,
-        scope2=scope2_tco2e,
-        scope3=scope3_tco2e,
-    )
+    try:
+        action_plan = generate_action_plan(
+            company_name=company["name"],
+            industry=company["industry"],
+            scope1=scope1_tco2e,
+            scope2=scope2_tco2e,
+            scope3=scope3_tco2e,
+            assessment_context={
+                "employee_count": company.get("employee_count"),
+                "location": company.get("location"),
+                "activities": [{"category": entry["category"], "quantity": float(entry["value"]),
+                    "unit": entry.get("unit"), "factor_kgco2e_per_unit": factor_map.get(entry["category"]),
+                    "emissions_kgco2e": round(float(entry["value"]) * factor_map.get(entry["category"], 0), 2)}
+                    for entry in entries],
+            },
+        )
+    except Exception as error:
+        logging.getLogger(__name__).warning("Scope analysis unavailable error_type=%s", type(error).__name__)
+        raise HTTPException(status_code=503, detail="AI analysis is temporarily unavailable. Your assessment is saved; please try again shortly.") from error
+
 
     return {
         "company_id": company_id,
