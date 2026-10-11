@@ -1,10 +1,29 @@
 import { useEffect, useState } from 'react';
-import { getDashboardResults, getAssessmentHistory } from '../services/api';
+import { api, getActionPlan, getDashboardResults, getAssessmentHistory } from '../services/api';
 import WhatIfSimulator from '../components/simulator/WhatIfSimulator';
 import ActionPlanList from '../components/recommendations/ActionPlanList';
 import './Dashboard.css';
+import { buildAssessmentPdf } from '../services/reports';
 
 export default function Dashboard({ companyId = null, onRestart }) {
+  const [exporting, setExporting] = useState('');
+  const [exportError, setExportError] = useState('');
+  async function downloadReport(format) {
+    setExporting(format); setExportError('');
+    try {
+      if (format === 'pdf') {
+        let analysis = null;
+        try { const response = await getActionPlan(data.company_id); analysis = JSON.parse(response.action_plan); } catch { /* Explicitly label unavailable AI in the PDF. */ }
+        buildAssessmentPdf(data, analysis).save(`CarbonAI_${data.company_id}.pdf`);
+      } else {
+        const response = await api.get(`/reports/${data.company_id}/excel`, { responseType: 'blob' });
+        const url = URL.createObjectURL(response.data);
+        const link = document.createElement('a'); link.href = url; link.download = `CarbonAI_${data.company_id}.xlsx`; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch { setExportError('Unable to export this assessment. Please try again.'); }
+    finally { setExporting(''); }
+  }
   const [selectedId, setSelectedId] = useState(companyId);
   const [history, setHistory] = useState([]);
   const [historyError, setHistoryError] = useState('');
@@ -96,6 +115,7 @@ export default function Dashboard({ companyId = null, onRestart }) {
           </button>
         </header>
 
+        <div className="document-buttons"><button className="dashboard-button dashboard-button-secondary" disabled={Boolean(exporting)} onClick={() => downloadReport('pdf')}>{exporting === 'pdf' ? 'Preparing PDF...' : 'Download assessment PDF'}</button><button className="dashboard-button dashboard-button-secondary" disabled={Boolean(exporting)} onClick={() => downloadReport('excel')}>{exporting === 'excel' ? 'Preparing Excel...' : 'Download assessment Excel'}</button></div>{exportError && <p role="alert">{exportError}</p>}
         {view === 'overview' && <section className="dashboard-metrics" aria-label="Carbon footprint summary">
           <article className="dashboard-metric dashboard-metric-featured">
             <span>Total emissions</span>
