@@ -4,6 +4,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from uuid import UUID
 from supabase import create_client, Client
 from supabase_auth.errors import AuthApiError, AuthRetryableError
 from dotenv import load_dotenv
@@ -232,6 +233,7 @@ def get_my_profile(current_user = Depends(get_current_user)):
 # ---- Full assessment submission ----
 
 class AssessmentInput(BaseModel):
+    submission_id: UUID | None = None
     reporting_year: int = Field(ge=1990, le=2100)
     forecast_series_id: str | None = None
     company_name: str
@@ -252,11 +254,11 @@ class AssessmentInput(BaseModel):
 def submit_assessment(data: AssessmentInput, current_user = Depends(get_current_user)):
     user_id = current_user.id
 
-    from uuid import uuid4
+    from uuid import uuid4, uuid5, NAMESPACE_URL
     from datetime import date
     if data.reporting_year >= date.today().year:
         raise HTTPException(status_code=422, detail="Use a completed calendar year for annual assessment data.")
-    company_id = str(uuid4())
+    company_id = str(uuid5(NAMESPACE_URL, f"carbonai:{user_id}:{data.submission_id}")) if data.submission_id else str(uuid4())
     series_id = company_id
     if data.forecast_series_id:
         anchor = (supabase_admin.table("companies").select("*").eq("id", data.forecast_series_id)
@@ -267,6 +269,25 @@ def submit_assessment(data: AssessmentInput, current_user = Depends(get_current_
         if (data.company_name.strip(), data.industry, data.location or "") != (business["name"].strip(), business["industry"], business.get("location") or ""):
             raise HTTPException(status_code=422, detail="Company name, industry and location must match the selected history.")
         series_id = business.get("forecast_series_id") or business["id"]
+    if data.submission_id:
+        existing = (supabase_admin.table("companies").select("*").eq("id", company_id).eq("user_id", user_id).limit(1).execute()).data
+        if existing:
+            saved = existing[0]
+            if any(saved.get(key) != value for key, value in {
+                "name": data.company_name, "industry": data.industry, "location": data.location,
+                "employee_count": data.employee_count, "reporting_year": data.reporting_year,
+                "forecast_series_id": series_id}.items()):
+                raise HTTPException(status_code=409, detail="This import identifier was already used with different company details. Start a new import.")
+            try:
+                dashboard = get_dashboard_results(company_id=company_id, current_user=current_user)
+            except HTTPException as error:
+                if error.status_code == 404:
+                    raise HTTPException(status_code=409, detail="This import has an incomplete saved assessment. Please contact support before starting a new import for this year.") from error
+                raise
+            original = {row["category"]: row["quantity"] for row in dashboard["activities"]}
+            if any(original.get(key) != getattr(data, key) for key in ("electricity", "natural_gas", "petrol", "diesel", "air_travel", "hotels", "commuting", "waste")):
+                raise HTTPException(status_code=409, detail="This import identifier was already used with different quantities. Start a new import.")
+            return dashboard
     # 1. Create the company record
     company_response = supabase_admin.table("companies").insert({
         "id": company_id,

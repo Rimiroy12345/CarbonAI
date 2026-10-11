@@ -25,6 +25,14 @@ NUMBER = r'(?<![\w.])-?\d[\d,]*(?:\.\d+)?'
 UNITS = r'kwh|mwh|m³|m3|cubic metres?|cubic meters?|litres?|liters?|\bl\b|kilometres?|kilometers?|\bkm\b|nights?|\bkg\b|kilograms?|tonnes?|metric tons?'
 
 
+def reporting_years(text):
+    # Require period/date context; a quantity such as 2024 kWh is not a year.
+    labeled = re.findall(r'(?:annual|year|fy|reporting|period|report|calendar)\b[^0-9]{0,45}((?:19|20|21)\d{2})\b', text, re.I)
+    dated = re.findall(r'\b((?:19|20|21)\d{2})[-/]\d{1,2}[-/]\d{1,2}\b', text)
+    months = re.findall(r'(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+((?:19|20|21)\d{2})\b', text, re.I)
+    return sorted({int(year) for year in labeled + dated + months})
+
+
 def parse_document(filename, content):
     if not content or len(content) > MAX_BYTES:
         raise ValueError('Choose a non-empty file up to 100 MB.')
@@ -193,4 +201,11 @@ def extract_document(filename, content, ai_extract=None):
     ])
     if not records:
         warnings.append('No supported activity quantities with explicit units were found. Use the template or enter data manually.')
+    document_years = sorted({year for line in lines for year in reporting_years(line['text'])})
+    for record in records:
+        evidence_years = reporting_years(record['evidence'])
+        candidates = evidence_years or document_years
+        record['reporting_year'] = candidates[0] if len(candidates) == 1 else None
+        record['year_candidates'] = candidates
+        record['year_source'] = 'activity evidence' if evidence_years else 'document context' if len(document_years) == 1 else 'needs review'
     return {'filename': Path(filename).name[:200], 'method': method, 'records': records, 'warnings': warnings, 'lines_processed': len(lines), 'document_type': 'Mixed activity data' if len({r['field'] for r in records}) > 1 else (records[0]['label'] if records else 'Unclassified'), 'supported_fields': list(FIELDS)}

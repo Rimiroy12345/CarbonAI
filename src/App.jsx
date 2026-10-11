@@ -14,6 +14,7 @@ import { tokenExpiry } from './services/session';
 import Dashboard from './pages/Dashboard';
 import Landing from './components/Landing';
 import DocumentUpload from './components/DocumentUpload';
+import BulkDocumentUpload from './components/BulkDocumentUpload';
 import './App.css';
 import './redesign.css';
 
@@ -76,13 +77,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('landing');
   const [step, setStep] = useState(1);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [dashboardId, setDashboardId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportingYear, setReportingYear] = useState('');
   const [periodError, setPeriodError] = useState('');
   const lastCompletedYear = new Date().getFullYear() - 1;
   const reportingYears = Array.from({length: lastCompletedYear - 1989}, (_, index) => lastCompletedYear - index);
   const continueToEmissions = () => {
-    if (!reportingYears.includes(Number(reportingYear))) { setPeriodError('Select the completed calendar year covered by your annual totals.'); return; }
+    if (!bulkMode && !reportingYears.includes(Number(reportingYear))) { setPeriodError('Select the completed calendar year covered by your annual totals.'); return; }
     setPeriodError(''); setStep(3);
   };
   const [historySeries, setHistorySeries] = useState([]);
@@ -99,7 +102,7 @@ export default function App() {
 
   useEffect(() => {
     const onExpired = () => {
-      setIsLoggedIn(false); setActiveTab('landing'); setShowSignIn(true);
+      setIsLoggedIn(false); setDashboardId(null); setActiveTab('landing'); setShowSignIn(true);
       setAuthMode('signin'); setSignInError(''); setSignInPassword('');
       setAuthMessage('Your session expired. Please sign in again. Your unsaved entries are still here.');
       setAssessmentResult(null); setAiRecommendation(''); setHistorySeries([]); setSeriesId('');
@@ -126,7 +129,7 @@ export default function App() {
   };
 
   const restartAssessment = () => {
-    setReportingYear(''); setSeriesId(''); setPeriodError('');
+    setDashboardId(null); setBulkMode(false); setReportingYear(''); setSeriesId(''); setPeriodError('');
     setShowManualEntry(false);
     setCompany({ ...initialCompany });
     setEmissions({ ...initialEmissions });
@@ -183,10 +186,10 @@ export default function App() {
   };
   const handleDashboardAccess = () => {
     if (!isLoggedIn) { openSignIn(); return; }
-    setActiveTab('dashboard');
+    setDashboardId(assessmentResult?.company_id || null); setActiveTab('dashboard');
   };
   const handleLogout = () => {
-    signOut(); setIsLoggedIn(false); setActiveTab('landing'); setStep(1);
+    signOut(); setDashboardId(null); setBulkMode(false); setIsLoggedIn(false); setActiveTab('landing'); setStep(1);
     setShowManualEntry(false);
     setCompany({ ...initialCompany }); setEmissions({ ...initialEmissions }); setAiRecommendation(''); setAssessmentResult(null);
   };
@@ -228,7 +231,7 @@ export default function App() {
       </nav>
 
       {activeTab === 'dashboard' ? (
-        <Dashboard onRestart={restartAssessment} />
+        <Dashboard key={dashboardId || 'latest'} companyId={dashboardId} onRestart={restartAssessment} />
       ) : (
         <>
           {step === 1 && (
@@ -238,7 +241,7 @@ export default function App() {
           {step === 2 && (
             <main className="setup-page"><section className="setup-section"><div className="setup-card"><div className="badge">✦ CARBONAI SETUP</div><h1>Let's understand<br />your <span>business.</span></h1><p className="setup-description">Tell us a little about your company. CarbonAI will use this information to create your personalized carbon assessment.</p><div className="form-grid">
             <div className="form-group"><label htmlFor="company-history">Company history</label><select id="company-history" value={seriesId} onChange={event => { setSeriesId(event.target.value); const selected = historySeries.find(item => item.id === event.target.value); if (selected) setCompany(previous => ({...previous, name: selected.name, industry: selected.industry, location: selected.location || ''})); }}><option value="">Start a separate company history</option>{historySeries.map(item => <option key={item.id} value={item.id}>{item.name} · {item.location || 'Location not provided'} · {item.id.slice(0, 8)}</option>)}</select><small>Select the same history when entering past years or another assessment for this business.</small></div>
-            <div className="form-group"><label htmlFor="reporting-year">Reporting year — completed calendar year</label><select id="reporting-year" required aria-invalid={Boolean(periodError)} aria-describedby="reporting-year-help reporting-year-error" value={reportingYear} onChange={event => { setReportingYear(event.target.value); setPeriodError(''); }}><option value="">Select reporting year</option>{reportingYears.map(year => <option key={year} value={year}>{year} · January–December</option>)}</select><small id="reporting-year-help">Use full-year totals. {lastCompletedYear + 1} is still in progress; year-to-date assessments are not supported yet.</small>{periodError && <p id="reporting-year-error" role="alert" className="signin-error">{periodError}</p>}</div>
+            <label className="document-confirm"><input type="checkbox" checked={bulkMode} onChange={event => setBulkMode(event.target.checked)}/>Upload multiple files for multiple reporting years</label><div className="form-group"><label htmlFor="reporting-year">Reporting year — completed calendar year</label><select id="reporting-year" disabled={bulkMode} required={!bulkMode} aria-invalid={Boolean(periodError)} aria-describedby="reporting-year-help reporting-year-error" value={reportingYear} onChange={event => { setReportingYear(event.target.value); setPeriodError(''); }}><option value="">Select reporting year</option>{reportingYears.map(year => <option key={year} value={year}>{year} · January–December</option>)}</select><small id="reporting-year-help">Bulk upload lets you confirm each year after extraction. Use full-year totals. {lastCompletedYear + 1} is still in progress; year-to-date assessments are not supported yet.</small>{periodError && <p id="reporting-year-error" role="alert" className="signin-error">{periodError}</p>}</div>
             <div className="form-group"><label>Company name</label><input type="text" placeholder="e.g. Acme Technologies" value={company.name} onChange={(e)=>updateCompany('name',e.target.value)} required /></div>
             <div className="form-group"><label>Industry</label><select value={company.industry} onChange={(e)=>updateCompany('industry',e.target.value)}><option value="">Select industry</option><option value="general">General</option><option>Technology</option><option>Manufacturing</option><option>Finance</option><option>Healthcare</option><option>Retail</option><option>Education</option><option>Other</option></select></div>
             <div className="form-group"><label>Number of employees</label><input type="number" min="1" placeholder="e.g. 250" value={company.employees} onChange={(e)=>updateCompany('employees',e.target.value)} /></div>
@@ -247,7 +250,7 @@ export default function App() {
           )}
 
           {step === 3 && (
-            <main className="assessment-page"><section className="assessment-section"><div className="assessment-card"><div className="badge">✦ EMISSIONS DATA</div><h1>Measure your<br /><span>carbon footprint.</span></h1><p className="assessment-description">Upload company documents to build your annual activity baseline, or enter your numbers manually below.</p><div className="document-message"><strong>Reporting period: January–December {reportingYear}</strong><p>Upload documents or enter annual totals for this year.</p><button type="button" className="carbonai-secondary" onClick={() => setStep(2)}>Change reporting year</button></div><DocumentUpload onApply={(values) => { setEmissions((previous) => ({ ...previous, ...values })); setShowManualEntry(true); }} /><button type="button" className="manual-entry-toggle" aria-expanded={showManualEntry} aria-controls="manual-emissions" onClick={() => setShowManualEntry((previous) => !previous)}>{showManualEntry ? 'Hide manual entry fields ↑' : 'Click here to manually enter your numbers ↓'}</button>{showManualEntry && <div id="manual-emissions"><p className="manual-entry-note">Enter or review annual activity totals. You can complete your assessment entirely here without uploading a document.</p><div className="emissions-grid">{emissionFields.map((field)=><div className="emission-group" key={field.key}><label>{field.label}</label><div className="input-with-unit"><input type="number" min="0" placeholder={field.placeholder} value={emissions[field.key]} onChange={(e)=>updateEmissions(field.key,e.target.value)} /><span>{field.unit}</span></div></div>)}</div></div>}<div className="assessment-actions"><button type="button" className="carbonai-secondary" onClick={()=>setStep(2)}>← Back</button><button type="button" className="carbonai-primary" onClick={handleCalculate} disabled={loading}>{loading?'Calculating...':'Calculate footprint'} <span>→</span></button></div></div></section></main>
+            <main className="assessment-page"><section className="assessment-section"><div className="assessment-card"><div className="badge">✦ EMISSIONS DATA</div><h1>Measure your<br /><span>carbon footprint.</span></h1><p className="assessment-description">Upload company documents to build your annual activity baseline, or enter your numbers manually below.</p>{bulkMode ? <><BulkDocumentUpload company={company} seriesId={seriesId} onComplete={id => { setDashboardId(id); setActiveTab('dashboard'); }}/><button type="button" className="manual-entry-toggle" onClick={() => { setBulkMode(false); setStep(2); }}>Click here for single-year upload or manual entry ↓</button></> : <><div className="document-message"><strong>Reporting period: January–December {reportingYear}</strong><p>Upload documents or enter annual totals for this year.</p><button type="button" className="carbonai-secondary" onClick={() => setStep(2)}>Change reporting year</button></div><DocumentUpload onApply={(values) => { setEmissions((previous) => ({ ...previous, ...values })); setShowManualEntry(true); }} /><button type="button" className="manual-entry-toggle" aria-expanded={showManualEntry} aria-controls="manual-emissions" onClick={() => setShowManualEntry((previous) => !previous)}>{showManualEntry ? 'Hide manual entry fields ↑' : 'Click here to manually enter your numbers ↓'}</button>{showManualEntry && <div id="manual-emissions"><p className="manual-entry-note">Enter or review annual activity totals. You can complete your assessment entirely here without uploading a document.</p><div className="emissions-grid">{emissionFields.map((field)=><div className="emission-group" key={field.key}><label>{field.label}</label><div className="input-with-unit"><input type="number" min="0" placeholder={field.placeholder} value={emissions[field.key]} onChange={(e)=>updateEmissions(field.key,e.target.value)} /><span>{field.unit}</span></div></div>)}</div></div>}<div className="assessment-actions"><button type="button" className="carbonai-secondary" onClick={()=>setStep(2)}>← Back</button><button type="button" className="carbonai-primary" onClick={handleCalculate} disabled={loading}>{loading?'Calculating...':'Calculate footprint'} <span>→</span></button></div></>}</div></section></main>
           )}
 
           {step === 4 && assessmentResult && (
