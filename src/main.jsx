@@ -4,6 +4,7 @@ import './index.css'
 import './Assessment.css'
 import './Results.css'
 import App from './App.jsx'
+import './redesign.css'
 
 const root = createRoot(document.getElementById('root'))
 

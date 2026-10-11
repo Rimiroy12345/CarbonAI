@@ -8,8 +8,9 @@ import {
 } from './services/api';
 
 import Dashboard from './pages/Dashboard';
-import carbonAIImage from './assets/carbon-ai.png';
+import Landing from './components/Landing';
 import './App.css';
+import './redesign.css';
 
 const emissionFields = [
   { key: 'electricity', label: 'Electricity consumption', unit: 'kWh / year', placeholder: 'e.g. 10000', category: '⚡ Energy' },
@@ -185,14 +186,7 @@ export default function App() {
       ) : (
         <>
           {step === 1 && (
-            <main className="carbonai-landing">
-              <section className="carbonai-hero" id="home"><div className="carbonai-hero-glow" /><div className="carbonai-hero-text"><div className="carbonai-eyebrow">A CLEANER TOMORROW, POWERED BY AI</div><h1>Measure today.<br /><em>A greener</em><br />tomorrow.</h1><p>CarbonAI helps businesses understand their carbon footprint, identify emission hotspots, and discover smarter AI-driven ways to reduce their environmental impact.</p><div className="carbonai-hero-buttons"><button type="button" className="carbonai-primary" onClick={handleGetStarted}>Get started <span>→</span></button></div><div className="carbonai-stats"><div><strong>500+</strong><span>Businesses onboarded</span></div><div><strong>2.8M</strong><span>tCO₂e analysed</span></div><div><strong>28%</strong><span>Average reduction potential</span></div></div></div><div className="carbonai-visual"><div className="carbonai-image-glow" /><div className="carbonai-image-wrap"><img src={carbonAIImage} alt="CarbonAI sustainable future" className="carbonai-image" /></div></div></section>
-              <section className="carbonai-trust"><p>TRUSTED BY FORWARD-THINKING COMPANIES</p><div className="carbonai-trust-logos"><span>Google</span><span>Microsoft</span><span>TATA</span><span>Infosys</span><span>Reliance</span></div></section>
-              <section className="carbonai-how" id="how"><div className="carbonai-label">HOW IT WORKS</div><h2>From data to <em>real impact.</em></h2><p className="carbonai-description">A simple process. A significant difference. Turn your business data into a cleaner, greener future.</p><div className="carbonai-process">{[['01','◫','Measure','Input your business activity data across key emission sources.'],['02','◌','Understand','Identify your biggest emission hotspots with AI-powered analysis.'],['03','◇','Take action','Get tailored recommendations to reduce your carbon footprint.']].map(([number,icon,title,description],index)=><React.Fragment key={number}><div className="carbonai-process-card"><span className="carbonai-process-number">{number}</span><div className="carbonai-process-icon">{icon}</div><h3>{title}</h3><p>{description}</p></div>{index<2&&<div className="carbonai-process-arrow">→</div>}</React.Fragment>)}</div></section>
-              <section className="carbonai-features" id="features"><div className="carbonai-label">CARBONAI PLATFORM</div><h2>Intelligence for a<br /><em>greener business.</em></h2><div className="carbonai-features-grid">{[['◈','Carbon Intelligence','Transform complex environmental data into clear insights for your business.'],['◌','Emission Hotspots','Quickly discover which activities are responsible for the largest share of emissions.'],['✦','AI Recommendations','Receive practical strategies focused on the reductions that matter most.'],['↗','Impact Tracking','Track your progress and understand how sustainability decisions change your footprint.']].map(([icon,title,description],index)=><div className="carbonai-feature-card" key={title}><div className="carbonai-feature-icon">{icon}</div><h3>{title}</h3><p>{description}</p><span className="carbonai-feature-number">0{index+1}</span></div>)}</div></section>
-              <section className="carbonai-impact" id="impact"><div><div className="carbonai-label">THE CARBONAI DIFFERENCE</div><h2>Better data.<br /><em>Better decisions.</em></h2></div><div className="carbonai-impact-stat"><strong>28%</strong><span>average reduction potential</span></div></section>
-              <section className="carbonai-about" id="about"><div className="carbonai-about-card"><div className="carbonai-label">ABOUT CARBONAI</div><h2>Technology that helps<br />businesses <em>change.</em></h2><p>CarbonAI combines carbon accounting, data analysis and artificial intelligence to help organizations make smarter sustainability decisions.</p><button type="button" className="carbonai-primary" onClick={handleGetStarted}>Start your assessment <span>→</span></button></div></section>
-            </main>
+            <Landing onStart={handleGetStarted} onDashboard={handleDashboardAccess} />
           )}
 
           {step === 2 && (
