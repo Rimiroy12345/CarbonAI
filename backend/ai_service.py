@@ -105,16 +105,44 @@ def generate_action_plan(
 
 
 def generate_document_response(prompt: str) -> str:
-    """Bound cloud extraction latency, with fallback handled by the extractor."""
+    """Try both cloud models, validate JSON, and log safe failure metadata."""
+    import json
+    import logging
     from google.genai import types
+    schema = {
+        "type": "object",
+        "properties": {"records": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "field": {"type": "string", "enum": ["electricity", "naturalGas", "petrol", "diesel", "flights", "hotels", "commuting", "waste"]},
+                "quantity": {"type": "number"}, "unit": {"type": "string"},
+                "line_id": {"type": "integer"}, "period": {"type": "string"},
+            },
+            "required": ["field", "quantity", "unit", "line_id", "period"],
+        }}},
+        "required": ["records"],
+    }
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"), http_options=types.HttpOptions(timeout=25000, retry_options=types.HttpRetryOptions(attempts=1)))
     try:
-        response = client.models.generate_content(
-            model=PRIMARY_MODEL, contents=prompt,
-            config=types.GenerateContentConfig(temperature=0, response_mime_type="application/json", max_output_tokens=8000),
-        )
-        if not response.text:
-            raise RuntimeError("Empty document extraction")
-        return response.text
+        for model in dict.fromkeys((PRIMARY_MODEL, FALLBACK_MODEL)):
+            try:
+                response = client.models.generate_content(
+                    model=model, contents=prompt,
+                    config=types.GenerateContentConfig(response_mime_type="application/json", response_json_schema=schema, max_output_tokens=8000),
+                )
+                if not response.text:
+                    raise ValueError("Empty cloud response")
+                parsed = json.loads(response.text)
+                if not isinstance(parsed, dict) or not isinstance(parsed.get("records"), list):
+                    raise ValueError("Invalid extraction response shape")
+                logging.getLogger(__name__).info("Document cloud extraction succeeded model=%s", model)
+                return response.text
+            except Exception as error:
+                # Never log prompts, uploaded text, credentials, or raw provider payloads.
+                logging.getLogger(__name__).warning(
+                    "Document cloud extraction failed model=%s error_type=%s status=%s",
+                    model, type(error).__name__, getattr(error, "code", None),
+                )
+        raise RuntimeError("Both cloud extraction models failed")
     finally:
         client.close()

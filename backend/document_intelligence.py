@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import math
+import logging
 import re
 import zipfile
 from pathlib import Path
@@ -181,7 +182,8 @@ def extract_document(filename, content, ai_extract=None):
                 candidates, method = proposed, 'cloud-ai'
             else:
                 warnings.append('Cloud AI found no verifiable activity values. Showing clearly labeled rows where available.')
-        except Exception:
+        except Exception as error:
+            logging.getLogger(__name__).warning('Document extraction fallback error_type=%s', type(error).__name__)
             warnings.append('Cloud AI was unavailable. Clearly labeled rows were extracted using the rule-based fallback.')
     records = validate_candidates(candidates, lines)
     warnings.extend([
