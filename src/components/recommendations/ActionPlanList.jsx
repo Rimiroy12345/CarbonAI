@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getActionPlan } from '../../services/api';
 
 const fallbackPlan = [
@@ -32,7 +32,7 @@ function parsePlan(text) {
   if (!text) return null;
 
   try {
-    const cleaned = text.trim().replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\`\`\`$/i, '');
+    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '');
     const plan = JSON.parse(cleaned);
     if (Array.isArray(plan.actions) && plan.actions.length) {
       return {
@@ -64,7 +64,7 @@ function priorityClass(priority) {
       : 'is-medium';
 }
 
-export default function ActionPlanList() {
+export default function ActionPlanList({ companyId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -76,7 +76,7 @@ export default function ActionPlanList() {
       try {
         setLoading(true);
         setError('');
-        const result = await getActionPlan();
+        const result = await getActionPlan(companyId);
         if (!cancelled) setData(result);
       } catch (err) {
         console.error('AI action plan fetch failed:', err);
@@ -91,7 +91,7 @@ export default function ActionPlanList() {
 
     loadActionPlan();
     return () => { cancelled = true; };
-  }, []);
+  }, [companyId]);
 
   const plan = parsePlan(data?.action_plan);
   const usingFallback = !plan;
@@ -161,7 +161,7 @@ export default function ActionPlanList() {
                 <span className="carbon-timeframe">{action.timeframe}</span>
               </div>
               <h3>{action.title}</h3>
-              <p>{action.why_it_matters}</p>
+              <p><strong>Why this is recommended:</strong> {action.why_it_matters}</p>
               <div className="carbon-action-impact"><span>Expected impact</span><strong>{action.expected_impact}</strong></div>
               {action.steps.length > 0 && (
                 <ol className="carbon-action-steps">

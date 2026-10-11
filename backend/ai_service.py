@@ -88,6 +88,12 @@ exact shape:
   "measurement": "One sentence describing the KPI and review cadence."
 }}
 
+For every action, explain WHY this company should take it in why_it_matters.
+Connect the reason to its reported scope totals and industry, explain the mechanism
+that reduces emissions, and state assumptions or missing data. Do not invent
+company equipment, spending, savings percentages, or unsupported facts.
+Explain why each priority and timeframe is appropriate. Give a reason for each
+step, using a plain sentence such as "Do X because Y".
 Provide exactly 4 actions. Make each action actionable, measurable, relevant to
 the reported scopes and industry, and useful to a business decision-maker.
 """
