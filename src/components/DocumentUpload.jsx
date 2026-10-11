@@ -19,7 +19,7 @@ export default function DocumentUpload({ onApply }) {
     setError(''); setResult(null); setRows([]); setConfirmed(false); setApplied(false);
     if (!chosen) { setFile(null); return; }
     if (!/\.(pdf|xlsx|csv)$/i.test(chosen.name)) { setFile(null); setError('Choose a PDF, XLSX or CSV file.'); return; }
-    if (!chosen.size || chosen.size > 10 * 1024 * 1024) { setFile(null); setError('Choose a non-empty file smaller than 10 MB.'); return; }
+    if (!chosen.size || chosen.size > 100 * 1024 * 1024) { setFile(null); setError('Choose a non-empty file up to 100 MB.'); return; }
     setFile(chosen);
   };
   const extract = async () => {
@@ -45,7 +45,7 @@ export default function DocumentUpload({ onApply }) {
     <div className="document-heading"><div><span className="new-eyebrow">DOCUMENT INTELLIGENCE</span><h2 id="document-title">Let your documents do the talking.</h2><p>Extract activity data, check the evidence, and bring it into your assessment.</p></div><FileUp size={28}/></div>
     <div className="document-drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); if (!busy) chooseFile(e.dataTransfer.files[0]); }}>
       <input ref={input} type="file" accept=".pdf,.xlsx,.csv" disabled={busy} aria-label="Select company activity document" onChange={(e) => chooseFile(e.target.files[0])}/>
-      <p><strong>{file ? file.name : 'Drop a company document here'}</strong></p><span>Text-based PDF, Excel (.xlsx), or CSV · Up to 10 MB · PDFs up to 60 pages</span>
+      <p><strong>{file ? file.name : 'Drop a company document here'}</strong></p><span>Text-based PDF, Excel (.xlsx), or CSV · Up to 100 MB · PDFs up to 60 pages</span>
       <div className="document-buttons"><button type="button" className="carbonai-secondary" disabled={busy} onClick={() => input.current.click()}>{file ? 'Choose another file' : 'Choose file'}</button>{file && <button type="button" className="carbonai-primary" disabled={busy} onClick={extract}>{busy ? 'Reading your document…' : 'Extract activity data'}</button>}</div>
     </div>
     <p className="document-privacy">Extracted text is sent to our cloud AI provider for analysis. Files are not saved by CarbonAI. Scanned images need OCR and are not supported yet.</p>

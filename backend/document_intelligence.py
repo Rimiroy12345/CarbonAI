@@ -7,7 +7,7 @@ import re
 import zipfile
 from pathlib import Path
 
-MAX_BYTES = 10 * 1024 * 1024
+MAX_BYTES = 100 * 1024 * 1024
 MAX_LINES = 1200
 MAX_CHARS = 65000
 FIELDS = {
@@ -26,7 +26,7 @@ UNITS = r'kwh|mwh|m³|m3|cubic metres?|cubic meters?|litres?|liters?|\bl\b|kilom
 
 def parse_document(filename, content):
     if not content or len(content) > MAX_BYTES:
-        raise ValueError('Choose a non-empty file smaller than 10 MB.')
+        raise ValueError('Choose a non-empty file up to 100 MB.')
     suffix = Path(filename).suffix.lower()
     lines, warnings = [], []
     def add(text, source):
