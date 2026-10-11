@@ -312,18 +312,35 @@ def submit_assessment(data: AssessmentInput, current_user = Depends(get_current_
     }
 
 
+@app.get("/assessments")
+def list_assessments(offset: int = 0, current_user=Depends(get_current_user)):
+    if offset < 0:
+        raise HTTPException(status_code=422, detail="Invalid history offset")
+    response = (supabase_admin.table("companies")
+        .select("id,name,industry,created_at,results(total_tco2e,calculated_at)", count="exact")
+        .eq("user_id", current_user.id).order("created_at", desc=True).order("id", desc=True)
+        .range(offset, offset + 49).execute())
+    total = response.count or 0
+    items = []
+    for index, company in enumerate(response.data):
+        results = company.get("results") or []
+        if not results:
+            continue
+        result = max(results, key=lambda row: row["calculated_at"])
+        items.append({"company_id": company["id"], "company_name": company["name"],
+            "number": total - offset - index, "calculated_at": result["calculated_at"],
+            "total_tco2e": result["total_tco2e"]})
+    return {"assessments": items, "next_offset": offset + 50 if offset + 50 < total else None}
+
+
 # ---- Dashboard: latest result for the authenticated user ----
 
 @app.get("/results")
-def get_dashboard_results(current_user = Depends(get_current_user)):
-    company_response = (
-        supabase_admin.table("companies")
-        .select("*")
-        .eq("user_id", current_user.id)
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
+def get_dashboard_results(company_id: str | None = None, current_user = Depends(get_current_user)):
+    query = supabase_admin.table("companies").select("*").eq("user_id", current_user.id)
+    if company_id:
+        query = query.eq("id", company_id)
+    company_response = query.order("created_at", desc=True).limit(1).execute()
 
     if not company_response.data:
         raise HTTPException(status_code=404, detail="No company assessment found")
@@ -420,17 +437,13 @@ def get_results(company_id: str, current_user = Depends(get_current_user)):
 # ---- AI Action Plan ----
 
 @app.get("/action-plan")
-def get_action_plan(current_user=Depends(get_current_user)):
+def get_action_plan(company_id: str | None = None, current_user=Depends(get_current_user)):
     user_id = current_user.id
 
-    company_response = (
-        supabase_admin.table("companies")
-        .select("*")
-        .eq("user_id", user_id)
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
+    query = supabase_admin.table("companies").select("*").eq("user_id", user_id)
+    if company_id:
+        query = query.eq("id", company_id)
+    company_response = query.order("created_at", desc=True).limit(1).execute()
 
     if not company_response.data:
         raise HTTPException(

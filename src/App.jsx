@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import {
   submitAssessment,
@@ -37,8 +37,8 @@ function getRecommendationPreview(recommendation) {
   try {
     const cleaned = String(recommendation)
       .trim()
-      .replace(/^\`\`\`(?:json)?\s*/i, '')
-      .replace(/\`\`\`$/i, '');
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/```$/i, '');
     const plan = JSON.parse(cleaned);
     const summary = String(plan.executive_summary || '')
       .replace(/\s+/g, ' ')
@@ -60,7 +60,7 @@ const initialEmissions = {
 };
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(localStorage.getItem('access_token')));
+  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(sessionStorage.getItem('access_token')));
   const [showSignIn, setShowSignIn] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
   const [signInEmail, setSignInEmail] = useState('');

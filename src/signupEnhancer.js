@@ -76,7 +76,6 @@ function openSignup() {
   `;
 
   document.body.appendChild(overlay);
-  const modal = overlay.querySelector('.carbonai-signup-enhancer-modal');
   const close = () => overlay.remove();
   overlay.querySelector('.carbonai-signup-enhancer-close').addEventListener('click', close);
   overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
@@ -112,8 +111,8 @@ function openSignup() {
       }
 
       if (data?.session?.access_token) {
-        localStorage.setItem('access_token', data.session.access_token);
-        if (data?.user) localStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('access_token', data.session.access_token);
+        if (data?.user) sessionStorage.setItem('user', JSON.stringify(data.user));
         message.className = 'carbonai-signup-enhancer-message carbonai-signup-enhancer-success';
         message.textContent = 'Account created! Loading your CarbonAI dashboard...';
         setTimeout(() => window.location.reload(), 700);
