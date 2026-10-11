@@ -27,8 +27,13 @@ class AnalysisPromptTests(unittest.TestCase):
         env = {}
         exec(compile(ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[])), 'validation', 'exec'), env)
         item = {'finding': 'Fuel reported', 'reason': 'Fuel combustion emits carbon', 'recommendation': 'Review usage', 'assumptions': ['Boundary unconfirmed']}
-        plan = {'scope_analysis': [dict(item, scope=n) for n in [1, 2, 3]], 'company_analysis': item, 'actions': [{}] * 4}
+        plan = {'scope_analysis': [dict(item, scope=n) for n in [1, 2, 3]], 'company_analysis': item, 'executive_summary': 'Profile summary', 'measurement': 'Track monthly', 'top_priority': {'title': 'Energy', 'why_now': 'Largest source'}, 'actions': [{'title': 'Audit', 'priority': 'High', 'timeframe': 'This quarter', 'expected_impact': 'Lower consumption', 'why_it_matters': 'Largest source', 'steps': ['Measure usage']}] * 4}
         self.assertEqual(json.loads(env['validate_action_plan'](json.dumps(plan))), plan)
+        for changes in [{'actions': [{}] * 4}, {'executive_summary': ''}, {'measurement': ''}, {'top_priority': {'title': 'Energy'}}]:
+            with self.subTest(changes=changes), self.assertRaises(ValueError): env['validate_action_plan'](json.dumps({**plan, **changes}))
+        for changes in [{'why_it_matters': ''}, {'steps': []}, {'steps': ['']}, {'priority': 'Urgent'}, {'title': 123}]:
+            actions = [dict(plan['actions'][0], **changes), *plan['actions'][1:]]
+            with self.subTest(changes=changes), self.assertRaises(ValueError): env['validate_action_plan'](json.dumps({**plan, 'actions': actions}))
         plan['scope_analysis'].pop()
         with self.assertRaises(ValueError): env['validate_action_plan'](json.dumps(plan))
 

@@ -1,62 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getActionPlan } from '../../services/api';
-
-const fallbackPlan = [
-  {
-    title: 'Reduce your largest emission source first',
-    priority: 'High',
-    timeframe: '0–90 days',
-    expected_impact: 'Focus investment where it can make the biggest difference.',
-    why_it_matters: 'Targeting the largest source first creates momentum and makes progress visible.',
-    steps: ['Review your emissions breakdown.', 'Set a reduction target.', 'Track progress monthly.'],
-  },
-  {
-    title: 'Improve energy efficiency',
-    priority: 'High',
-    timeframe: '0–90 days',
-    expected_impact: 'Lower electricity and fuel use while reducing operating costs.',
-    why_it_matters: 'Efficiency upgrades are often the fastest way to reduce Scope 1 and Scope 2 emissions.',
-    steps: ['Audit major energy users.', 'Eliminate avoidable consumption.', 'Evaluate efficient equipment and renewable electricity.'],
-  },
-  {
-    title: 'Cut travel-related emissions',
-    priority: 'Medium',
-    timeframe: '3–6 months',
-    expected_impact: 'Fewer avoidable trips and lower emissions per journey.',
-    why_it_matters: 'Travel can grow quickly without a clear travel policy and measurement process.',
-    steps: ['Set a travel baseline.', 'Prefer rail or virtual meetings where practical.', 'Add carbon criteria to travel approvals.'],
-  },
-];
-
-function parsePlan(text) {
-  if (!text) return null;
-
-  try {
-    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '');
-    const plan = JSON.parse(cleaned);
-    if (Array.isArray(plan.actions) && plan.actions.length) {
-      return {
-        executive_summary: plan.executive_summary || 'A tailored action plan based on your latest assessment.',
-        top_priority: plan.top_priority || null,
-        scope_analysis: Array.isArray(plan.scope_analysis) ? [1, 2, 3].map(scope => plan.scope_analysis.find(item => item.scope === scope)).filter(Boolean) : [],
-        company_analysis: plan.company_analysis && typeof plan.company_analysis === 'object' ? plan.company_analysis : null,
-        actions: plan.actions.slice(0, 4).map((action) => ({
-          title: action.title || 'Carbon reduction opportunity',
-          priority: action.priority || 'Medium',
-          timeframe: action.timeframe || 'This year',
-          expected_impact: action.expected_impact || 'Measured reduction in annual emissions.',
-          why_it_matters: action.why_it_matters || 'A practical step toward a lower-carbon operation.',
-          steps: Array.isArray(action.steps) ? action.steps.slice(0, 3) : [],
-        })),
-        measurement: plan.measurement || 'Review emissions and action progress monthly.',
-      };
-    }
-  } catch {
-    // Older recommendations used Markdown. Show useful baseline cards instead.
-  }
-
-  return null;
-}
+import { parseActionPlan as parsePlan } from '../../services/actionPlan';
 
 function priorityClass(priority) {
   return String(priority).toLowerCase().includes('high')
@@ -70,6 +14,7 @@ export default function ActionPlanList({ companyId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +24,7 @@ export default function ActionPlanList({ companyId }) {
         setLoading(true);
         setError('');
         const result = await getActionPlan(companyId);
+        if (!parsePlan(result.action_plan)) throw new Error('This saved analysis has incomplete details. Please create a new assessment for a complete AI report.');
         if (!cancelled) setData(result);
       } catch (err) {
         console.error('AI action plan fetch failed:', err);
@@ -93,11 +39,11 @@ export default function ActionPlanList({ companyId }) {
 
     loadActionPlan();
     return () => { cancelled = true; };
-  }, [companyId]);
+  }, [companyId, retryCount]);
 
   const plan = parsePlan(data?.action_plan);
   const usingFallback = !plan;
-  const actions = plan?.actions || fallbackPlan;
+  const actions = plan?.actions || [];
 
   if (loading) {
     return (
@@ -115,6 +61,15 @@ export default function ActionPlanList({ companyId }) {
     );
   }
 
+  if (error || usingFallback) {
+    return <section className="carbon-action-plan" aria-label="AI analysis unavailable">
+      <div className="carbon-action-header"><h2>AI analysis unavailable</h2></div>
+      <p role="alert">{error || 'A complete AI analysis is not available yet.'}</p>
+      <p>Your saved assessment and calculations are still available.</p>
+      <button type="button" className="dashboard-button dashboard-button-primary" onClick={() => setRetryCount(count => count + 1)}>Retry AI analysis</button>
+    </section>;
+  }
+
   return (
     <section className="carbon-action-plan">
       <div className="carbon-action-header">
@@ -123,7 +78,7 @@ export default function ActionPlanList({ companyId }) {
           <h2>Your recommended action plan</h2>
           <p>Prioritized actions based on your latest emissions profile.</p>
         </div>
-        <span className="carbon-action-status">{usingFallback ? 'Baseline plan' : 'AI generated'}</span>
+        <span className="carbon-action-status">AI generated</span>
       </div>
 
       {data?.captured_at && <p className="carbon-fallback-note">Saved AI analysis · {new Date(data.captured_at).toLocaleString()} · Reopening this assessment preserves these findings and recommendations.</p>}
@@ -135,24 +90,10 @@ export default function ActionPlanList({ companyId }) {
         </div>
       )}
 
-      {usingFallback ? (
-        <div className="carbon-fallback-note">
-          {error
-            ? 'The AI service is temporarily unavailable, so this baseline plan keeps you moving.'
-            : 'Your next request will receive the new AI-formatted action plan. This baseline plan is ready to use now.'}
-        </div>
-      ) : (
-        <div className="carbon-plan-summary">
-          <span>Assessment insight</span>
-          <p>{plan.executive_summary}</p>
-          {plan.top_priority && (
-            <div className="carbon-plan-priority">
-              <strong>Start here: {plan.top_priority.title}</strong>
-              <small>{plan.top_priority.why_now}</small>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="carbon-plan-summary">
+        <span>Assessment insight</span><p>{plan.executive_summary}</p>
+        <div className="carbon-plan-priority"><strong>Start here: {plan.top_priority.title}</strong><small>{plan.top_priority.why_now}</small></div>
+      </div>
 
       {!usingFallback && plan.scope_analysis.length > 0 && <section className="scope-analysis" aria-label="Scope-specific AI analysis"><h3>Understand each scope</h3><p>AI interpretation of the activities reported in this assessment.</p><div className="scope-analysis-grid">{plan.scope_analysis.map(analysis => <article key={analysis.scope}><span className="carbon-action-eyebrow">SCOPE {analysis.scope}</span><h4>{({1: 'Direct fuel use', 2: 'Purchased electricity', 3: 'Reported indirect activities'})[analysis.scope]}</h4><p><strong>What we found:</strong> {analysis.finding}</p><p><strong>Why it matters:</strong> {analysis.reason}</p><p><strong>Recommended next step:</strong> {analysis.recommendation}</p>{Array.isArray(analysis.assumptions) && <details><summary>Assumptions and missing data</summary><ul>{analysis.assumptions.map((item, i) => <li key={i}>{item}</li>)}</ul></details>}</article>)}</div></section>}
       {!usingFallback && plan.company_analysis && <section className="carbon-plan-summary"><h3>Company-wide priorities</h3><p>{plan.company_analysis.finding}</p><p><strong>Why:</strong> {plan.company_analysis.reason}</p><p><strong>Next step:</strong> {plan.company_analysis.recommendation}</p>{Array.isArray(plan.company_analysis.assumptions) && <details><summary>Company context and limitations</summary><ul>{plan.company_analysis.assumptions.map((item, i) => <li key={i}>{item}</li>)}</ul></details>}</section>}

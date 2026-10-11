@@ -156,6 +156,22 @@ def validate_action_plan(response: str) -> str:
             raise ValueError("Invalid analysis assumptions")
     if not isinstance(plan.get("actions"), list) or len(plan["actions"]) != 4:
         raise ValueError("Incomplete recommendations")
+    for key in ("executive_summary", "measurement"):
+        if not isinstance(plan.get(key), str) or not plan[key].strip():
+            raise ValueError("Missing report summary or measurement")
+    priority = plan.get("top_priority")
+    if not isinstance(priority, dict) or any(not isinstance(priority.get(key), str) or not priority[key].strip()
+            for key in ("title", "why_now")):
+        raise ValueError("Missing top priority explanation")
+    for action in plan["actions"]:
+        if not isinstance(action, dict) or any(not isinstance(action.get(key), str) or not action[key].strip()
+                for key in ("title", "priority", "timeframe", "expected_impact", "why_it_matters")):
+            raise ValueError("Incomplete action details")
+        if action["priority"] not in {"High", "Medium", "Low"}:
+            raise ValueError("Invalid action priority")
+        steps = action.get("steps")
+        if not isinstance(steps, list) or not steps or any(not isinstance(step, str) or not step.strip() for step in steps):
+            raise ValueError("Missing actionable steps")
     return json.dumps(plan)
 
 

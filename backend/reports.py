@@ -8,8 +8,8 @@ def build_workbook(data):
     summary = workbook.active
     summary.title = 'Summary'
     summary.append(['CarbonAI assessment', data['company_name']])
-    for label, key in [('Assessment ID', 'company_id'), ('Saved date (UTC)', 'calculated_at'), ('Industry', 'industry'), ('Location', 'location'), ('Employees', 'employee_count'), ('Saved total tCO2e', 'total_tco2e')]:
-        summary.append([label, data.get(key)])
+    for label, key in [('Assessment ID', 'company_id'), ('Saved date (UTC)', 'calculated_at'), ('Reporting year (January–December)', 'reporting_year'), ('Industry', 'industry'), ('Location', 'location'), ('Employees', 'employee_count'), ('Saved total tCO2e', 'total_tco2e')]:
+        summary.append([label, data.get(key) if data.get(key) is not None else 'Not recorded' if key == 'reporting_year' else None])
     summary.append(['Scope', 'Calculation-context tCO2e'])
     activities = workbook.create_sheet('Activities')
     activities.append(['Activity', 'Quantity', 'Unit', 'Scope', 'Factor kgCO2e per unit', 'Calculated kgCO2e'])
@@ -18,7 +18,7 @@ def build_workbook(data):
     last = len(data['activities']) + 1
     for scope in [1, 2, 3]:
         summary.append([f'Scope {scope}', f'=SUMIF(Activities!D2:D{last},{scope},Activities!F2:F{last})/1000'])
-    summary.append(['Calculation-context total tCO2e', '=SUM(B9:B11)'])
+    summary.append(['Calculation-context total tCO2e', '=SUM(B10:B12)'])
     notes = workbook.create_sheet('Method')
     notes.append(['Method and limitations'])
     snapshot = data.get('snapshot') or {}
@@ -43,7 +43,7 @@ def build_workbook(data):
         for row in sheet:
             for cell in row:
                 # Prevent company/user strings from becoming spreadsheet formulas.
-                if cell.data_type == 'f' and not (sheet.title == 'Activities' and cell.column == 6 or sheet.title == 'Summary' and cell.row >= 9 and cell.column == 2):
+                if cell.data_type == 'f' and not (sheet.title == 'Activities' and cell.column == 6 or sheet.title == 'Summary' and cell.row >= 10 and cell.column == 2):
                     cell.data_type = 's'
                 cell.alignment = Alignment(vertical='top', wrap_text=True)
                 if isinstance(cell.value, (int, float)) or cell.data_type == 'f':

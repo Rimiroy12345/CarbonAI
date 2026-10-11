@@ -17,7 +17,7 @@ export function buildAssessmentPdf(data, analysis = null) {
   };
   text('CarbonAI | Assessment report', true);
   text(data.company_name, true);
-  text(`Assessment ID: ${data.company_id}\nSaved: ${data.calculated_at}\nExported: ${new Date().toISOString()}\nIndustry: ${data.industry}\nLocation: ${data.location || 'Not provided'}\nEmployees: ${data.employee_count ?? 'Not provided'}`);
+  text(`Assessment ID: ${data.company_id}\nReporting year: ${data.reporting_year ?? 'Not recorded'} (January-December)\nSaved: ${data.calculated_at}\nExported: ${new Date().toISOString()}\nIndustry: ${data.industry}\nLocation: ${data.location || 'Not provided'}\nEmployees: ${data.employee_count ?? 'Not provided'}`);
   text(`Calculation snapshot: ${data.snapshot?.calculation_captured_at || 'Not retained'} | ${data.snapshot?.provenance || 'legacy_unsaved'}`);
   text('Calculated footprint', true);
   text(`Saved footprint: ${Number(data.total_tco2e).toFixed(4)} tCO2e\nCalculation-context footprint: ${(data.total_kgco2e / 1000).toFixed(4)} tCO2e`);

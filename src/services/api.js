@@ -1,4 +1,11 @@
 import axios from 'axios';
+import { sessionExpired } from './session.js';
+
+export function expireSession(expectedToken = sessionStorage.getItem('access_token')) {
+  if (!expectedToken || expectedToken !== sessionStorage.getItem('access_token')) return;
+  signOut();
+  window.dispatchEvent(new Event('carbonai:session-expired'));
+}
 
 // Remove legacy persistent credentials; sessions now belong to this tab.
 localStorage.removeItem('access_token');
@@ -16,7 +23,13 @@ export const api = axios.create({
 // Automatically attach Supabase access token
 api.interceptors.request.use(
   (config) => {
+    if (config.url?.startsWith('/auth/')) return config;
     const accessToken = sessionStorage.getItem('access_token');
+
+    if (accessToken && sessionExpired(accessToken)) {
+      expireSession(accessToken);
+      return Promise.reject(new Error('Your session expired. Please sign in again. Your unsaved entries are still here.'));
+    }
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -26,6 +39,14 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
+api.interceptors.response.use(response => response, error => {
+  const authorization = error.config?.headers?.Authorization;
+  const token = typeof authorization === 'string' ? authorization.replace(/^Bearer /, '') : null;
+  // A late response from an old session must not clear a newer login.
+  if (error.response?.status === 401 && !error.config?.url?.startsWith('/auth/')) expireSession(token);
+  return Promise.reject(error);
+});
 
 export const signIn = async (email, password) => {
   try {
@@ -81,7 +102,11 @@ export const signOut = () => {
   sessionStorage.removeItem('user');
 };
 
-export const isAuthenticated = () => Boolean(sessionStorage.getItem('access_token'));
+export const isAuthenticated = () => {
+  const token = sessionStorage.getItem('access_token');
+  if (sessionExpired(token)) { signOut(); return false; }
+  return true;
+};
 
 export const submitAssessment = async (assessmentData) => {
   const companyName = String(assessmentData?.company_name || '').trim();

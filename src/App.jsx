@@ -6,8 +6,11 @@ import {
   signIn,
   signUp,
   signOut,
+  isAuthenticated,
+  expireSession,
 } from './services/api';
 
+import { tokenExpiry } from './services/session';
 import Dashboard from './pages/Dashboard';
 import Landing from './components/Landing';
 import DocumentUpload from './components/DocumentUpload';
@@ -61,7 +64,7 @@ const initialEmissions = {
 };
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(sessionStorage.getItem('access_token')));
+  const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated);
   const [showSignIn, setShowSignIn] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
   const [signInEmail, setSignInEmail] = useState('');
@@ -93,6 +96,26 @@ export default function App() {
   const [emissions, setEmissions] = useState(initialEmissions);
   const [aiRecommendation, setAiRecommendation] = useState('');
   const [assessmentResult, setAssessmentResult] = useState(null);
+
+  useEffect(() => {
+    const onExpired = () => {
+      setIsLoggedIn(false); setActiveTab('landing'); setShowSignIn(true);
+      setAuthMode('signin'); setSignInError(''); setSignInPassword('');
+      setAuthMessage('Your session expired. Please sign in again. Your unsaved entries are still here.');
+      setAssessmentResult(null); setAiRecommendation(''); setHistorySeries([]); setSeriesId('');
+    };
+    window.addEventListener('carbonai:session-expired', onExpired);
+    return () => window.removeEventListener('carbonai:session-expired', onExpired);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const token = sessionStorage.getItem('access_token');
+    const checkExpiry = () => { if (tokenExpiry(token) <= Date.now()) expireSession(token); };
+    const timer = setTimeout(checkExpiry, Math.min(Math.max(tokenExpiry(token) - Date.now() + 100, 0), 2147483647));
+    window.addEventListener('focus', checkExpiry);
+    return () => { clearTimeout(timer); window.removeEventListener('focus', checkExpiry); };
+  }, [isLoggedIn]);
 
   const updateCompany = (field, value) => {
     setCompany((prev) => ({ ...prev, [field]: value }));
