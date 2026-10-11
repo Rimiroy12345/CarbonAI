@@ -3,7 +3,7 @@ import math
 
 CATEGORIES = ('electricity', 'natural_gas', 'petrol', 'diesel', 'air_travel', 'hotels', 'commuting', 'waste')
 SCOPES = {key: 1 if key in {'natural_gas', 'petrol', 'diesel'} else 2 if key == 'electricity' else 3 for key in CATEGORIES}
-MIN_YEARS = 6
+MIN_YEARS = 2
 
 def trend(years, values, target):
     xmean = sum(years) / len(years)
@@ -35,6 +35,28 @@ def forecast_history(records, factors, selected_id):
             return {**common, 'status': 'invalid_history', 'reason': f'Review incomplete or invalid activity values for {year}.'}
     if any(key not in factors or not math.isfinite(factors[key]) or factors[key] < 0 for key in CATEGORIES):
         return {**common, 'status': 'invalid_factors', 'reason': 'One or more emission factors is missing or invalid.'}
+    if len(years) < 6:
+        activities = []
+        scopes = {1: 0.0, 2: 0.0, 3: 0.0}
+        for key in CATEGORIES:
+            latest = versions[cutoff]['values'][key]
+            prior = versions[years[-2]]['values'][key]
+            emissions = latest * factors[key]
+            scopes[SCOPES[key]] += emissions
+            activities.append({'category': key, 'scope': SCOPES[key], 'latest_quantity': latest,
+                'predicted_quantity': latest, 'predicted_tco2e': round(emissions / 1000, 4),
+                'change_tco2e': 0.0, 'historical_change_tco2e': round((latest - prior) * factors[key] / 1000, 4),
+                'method': 'last_year_baseline', 'factor': factors[key],
+                'unit': {'electricity': 'kWh', 'natural_gas': 'm3', 'petrol': 'litres', 'diesel': 'litres', 'air_travel': 'km', 'hotels': 'nights', 'commuting': 'km', 'waste': 'kg'}[key]})
+        total = round(sum(scopes.values()) / 1000, 4)
+        return {**common, 'status': 'ready', 'preliminary': True, 'forecast_year': cutoff + 1,
+            'current_tco2e': total, 'predicted_tco2e': total,
+            'scopes': {str(key): round(value / 1000, 4) for key, value in scopes.items()},
+            'activities': activities, 'drivers': [],
+            'limitations': ['Preliminary last-year baseline: assumes activity stays unchanged next year.',
+                'Two to five years is insufficient for this version’s trend selection and independent holdout testing.',
+                'No validated accuracy or uncertainty range is available. Six years enables model comparison.',
+                'Current emission factors held constant; intervention effects are not modeled.']}
     activities = []
     scopes = {1: 0.0, 2: 0.0, 3: 0.0}
     total_errors = {'trend': [], 'baseline': []}

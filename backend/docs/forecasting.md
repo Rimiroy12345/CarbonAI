@@ -6,7 +6,7 @@ Read-only production audit on 11 October 2026 found 27 assessments across four a
 ## Intended use and training
 This is an exploratory, company-local annual projection, not a validated enterprise forecasting model. It fits ordinary least-squares activity against reporting year separately for electricity, gas, petrol, diesel, flights, hotels, commuting and waste. No dependency installation or paid inference is required. The fitted slope and intercept are recomputed on request from the selected company's data. Year is the only predictor. Production, headcount, weather and operational interventions are not modeled.
 
-Minimum six consecutive completed calendar years, with all eight activities explicitly present and finite/nonnegative. Six is an implementation guardrail, not an evidence-based sufficiency threshold. Real-world reliability remains unevaluated because no eligible dated company history exists at audit time. Synthetic sequences are unit-test fixtures only.
+Minimum two consecutive completed calendar years, with all eight activities explicitly present and finite/nonnegative. Two to five years produces an unvalidated last-year baseline. Six enables trend comparison and independent holdout evaluation. Six is an implementation guardrail, not an evidence-based sufficiency threshold. Real-world reliability remains unevaluated because no eligible dated company history exists at audit time. Synthetic sequences are unit-test fixtures only.
 
 Public national or sector datasets were not substituted for company history: their observation units and boundaries do not match this application. A separately labeled public-data research benchmark may be added later, but would not validate forecasts for individual customers.
 
