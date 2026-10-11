@@ -38,6 +38,8 @@ function parsePlan(text) {
       return {
         executive_summary: plan.executive_summary || 'A tailored action plan based on your latest assessment.',
         top_priority: plan.top_priority || null,
+        scope_analysis: Array.isArray(plan.scope_analysis) ? [1, 2, 3].map(scope => plan.scope_analysis.find(item => item.scope === scope)).filter(Boolean) : [],
+        company_analysis: plan.company_analysis && typeof plan.company_analysis === 'object' ? plan.company_analysis : null,
         actions: plan.actions.slice(0, 4).map((action) => ({
           title: action.title || 'Carbon reduction opportunity',
           priority: action.priority || 'Medium',
@@ -151,6 +153,8 @@ export default function ActionPlanList({ companyId }) {
         </div>
       )}
 
+      {!usingFallback && plan.scope_analysis.length > 0 && <section className="scope-analysis" aria-label="Scope-specific AI analysis"><h3>Understand each scope</h3><p>AI interpretation of the activities reported in this assessment.</p><div className="scope-analysis-grid">{plan.scope_analysis.map(analysis => <article key={analysis.scope}><span className="carbon-action-eyebrow">SCOPE {analysis.scope}</span><h4>{({1: 'Direct fuel use', 2: 'Purchased electricity', 3: 'Reported indirect activities'})[analysis.scope]}</h4><p><strong>What we found:</strong> {analysis.finding}</p><p><strong>Why it matters:</strong> {analysis.reason}</p><p><strong>Recommended next step:</strong> {analysis.recommendation}</p>{Array.isArray(analysis.assumptions) && <details><summary>Assumptions and missing data</summary><ul>{analysis.assumptions.map((item, i) => <li key={i}>{item}</li>)}</ul></details>}</article>)}</div></section>}
+      {!usingFallback && plan.company_analysis && <section className="carbon-plan-summary"><h3>Company-wide priorities</h3><p>{plan.company_analysis.finding}</p><p><strong>Why:</strong> {plan.company_analysis.reason}</p><p><strong>Next step:</strong> {plan.company_analysis.recommendation}</p>{Array.isArray(plan.company_analysis.assumptions) && <details><summary>Company context and limitations</summary><ul>{plan.company_analysis.assumptions.map((item, i) => <li key={i}>{item}</li>)}</ul></details>}</section>}
       <div className="carbon-action-list carbon-action-cards">
         {actions.map((action, index) => (
           <article className="carbon-action-item carbon-action-card" key={`${action.title}-${index}`}>
