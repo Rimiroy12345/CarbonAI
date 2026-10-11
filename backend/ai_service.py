@@ -6,10 +6,16 @@ from google import genai
 
 load_dotenv()
 
-# Stable Gemini 3 models. Environment overrides let us update a model without
-# changing source code if a provider deprecates one in the future.
-PRIMARY_MODEL = os.getenv("GEMINI_PRIMARY_MODEL", "gemini-3.6-flash")
-FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
+# These text models have a Gemini API free tier. Reject paid-only overrides.
+FREE_TIER_MODELS = frozenset({"gemini-3.6-flash", "gemini-3.5-flash-lite"})
+
+def free_tier_model(setting: str, default: str) -> str:
+    requested = os.getenv(setting, default)
+    return requested if requested in FREE_TIER_MODELS else default
+
+PRIMARY_MODEL = free_tier_model("GEMINI_PRIMARY_MODEL", "gemini-3.6-flash")
+FALLBACK_MODEL = free_tier_model("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
+DOCUMENT_MODEL = free_tier_model("GEMINI_DOCUMENT_MODEL", "gemini-3.5-flash-lite")
 MAX_ATTEMPTS_PER_MODEL = 2
 
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -124,7 +130,7 @@ def generate_document_response(prompt: str) -> str:
     }
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"), http_options=types.HttpOptions(timeout=25000, retry_options=types.HttpRetryOptions(attempts=1)))
     try:
-        for model in dict.fromkeys((PRIMARY_MODEL, FALLBACK_MODEL)):
+        for model in dict.fromkeys((DOCUMENT_MODEL, PRIMARY_MODEL, FALLBACK_MODEL)):
             try:
                 response = client.models.generate_content(
                     model=model, contents=prompt,
