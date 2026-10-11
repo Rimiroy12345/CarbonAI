@@ -102,3 +102,19 @@ def generate_action_plan(
         scope3=scope3,
     )
     return generate_ai_response(prompt)
+
+
+def generate_document_response(prompt: str) -> str:
+    """Bound cloud extraction latency, with fallback handled by the extractor."""
+    from google.genai import types
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"), http_options=types.HttpOptions(timeout=25000, retry_options=types.HttpRetryOptions(attempts=1)))
+    try:
+        response = client.models.generate_content(
+            model=PRIMARY_MODEL, contents=prompt,
+            config=types.GenerateContentConfig(temperature=0, response_mime_type="application/json", max_output_tokens=8000),
+        )
+        if not response.text:
+            raise RuntimeError("Empty document extraction")
+        return response.text
+    finally:
+        client.close()
