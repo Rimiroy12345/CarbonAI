@@ -510,3 +510,21 @@ def extract_uploaded_document(file: UploadFile = File(...), current_user = Depen
         raise HTTPException(status_code=422, detail="Unable to read this file. Check it is valid and upload an unlocked PDF, XLSX, or UTF-8 CSV.")
     finally:
         file.file.close()
+
+
+@app.on_event("startup")
+def verify_cloud_document_extraction():
+    # Run a bounded synthetic-data check in the background; never use customer files.
+    from threading import Thread
+    def check():
+        logger = logging.getLogger(__name__)
+        expected = {"electricity": 125000, "naturalGas": 8000, "petrol": 3600, "diesel": 12000, "flights": 85000, "hotels": 420, "commuting": 180000, "waste": 18500}
+        sample = b"Electricity,125,MWh,Annual 2025\nNatural gas,8000,m3,Annual 2025\nPetrol,3600,litres,Annual 2025\nDiesel,12000,litres,Annual 2025\nAir travel,85000,km,Annual 2025\nHotel stays,420,nights,Annual 2025\nEmployee commuting,180000,km,Annual 2025\nWaste,18.5,tonnes,Annual 2025"
+        try:
+            result = extract_document("cloud-self-check.csv", sample, generate_document_response)
+            actual = {row["field"]: row["value"] for row in result["records"]}
+            passed = result["method"] == "cloud-ai" and actual == expected and len(result["records"]) == 8
+            logger.warning("Cloud document self-check passed=%s method=%s records=%s", passed, result["method"], len(result["records"]))
+        except Exception as error:
+            logger.warning("Cloud document self-check failed error_type=%s", type(error).__name__)
+    Thread(target=check, daemon=True).start()
