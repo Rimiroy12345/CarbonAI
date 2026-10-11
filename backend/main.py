@@ -9,6 +9,7 @@ from supabase_auth.errors import AuthApiError, AuthRetryableError
 from dotenv import load_dotenv
 from ai_service import generate_action_plan
 from snapshots import calculation_snapshot, calculation_source
+from data_reads import retry_data_reads
 
 load_dotenv()
 
@@ -195,6 +196,7 @@ def sign_in(data: SignInInput):
 
 from fastapi import Header, HTTPException
 
+@retry_data_reads
 def get_current_user(authorization: str = Header(...)):
     """
     Expects header: Authorization: Bearer <access_token>
@@ -658,6 +660,7 @@ def set_reporting_period(company_id: str, data: ReportingPeriodInput, current_us
 
 
 @app.get("/forecast/{company_id}")
+@retry_data_reads
 def get_forecast(company_id: str, current_user=Depends(get_current_user)):
     from forecasting import forecast_history, CATEGORIES
     records = owned_companies(current_user.id)
@@ -676,6 +679,14 @@ def get_forecast(company_id: str, current_user=Depends(get_current_user)):
             versions[year] = row
     versions[selected["reporting_year"]] = selected
     history = list(versions.values())
+    if len(history) < 2:
+        later_years = [row["reporting_year"] for row in records
+            if (row.get("forecast_series_id") or row["id"]) == root
+            and row["industry"] == selected["industry"]
+            and row.get("reporting_year") is not None and row["reporting_year"] > selected["reporting_year"]]
+        if later_years:
+            return {"status": "insufficient_history", "years_available": len(history), "required_years": 2,
+                "reason": f"This assessment only uses history through {selected['reporting_year']}. Open the {max(later_years)} assessment in Assessment history to include the newer reporting year."}
     for row in history:
         entries = (supabase_admin.table("emission_entries").select("category,value").eq("company_id", row["id"]).execute()).data
         values = {}
