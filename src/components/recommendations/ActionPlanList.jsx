@@ -126,6 +126,7 @@ export default function ActionPlanList({ companyId }) {
         <span className="carbon-action-status">{usingFallback ? 'Baseline plan' : 'AI generated'}</span>
       </div>
 
+      {data?.captured_at && <p className="carbon-fallback-note">Saved AI analysis · {new Date(data.captured_at).toLocaleString()} · Reopening this assessment preserves these findings and recommendations.</p>}
       {data && (
         <div className="carbon-scope-grid">
           <div><span>Scope 1</span><strong>{Number(data.scope1 || 0).toFixed(2)} tCO₂e</strong></div>
