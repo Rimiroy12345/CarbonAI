@@ -9,6 +9,7 @@ export default function BulkDocumentUpload({ company, seriesId, onComplete }) {
   const [rows, setRows] = useState([]);
   const [messages, setMessages] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
@@ -31,14 +32,17 @@ export default function BulkDocumentUpload({ company, seriesId, onComplete }) {
     if (!chosen.length || chosen.length > 10) { setError('Select between 1 and 10 files.'); return; }
     if (chosen.some(file => !/\.(pdf|xlsx|csv)$/i.test(file.name) || !file.size || file.size > 100 * 1024 * 1024) || chosen.reduce((sum, file) => sum + file.size, 0) > 100 * 1024 * 1024) { setError('Choose non-empty PDF, XLSX or CSV files, up to 100 MB total per batch.'); return; }
     setFiles(chosen); setRows([]); setMessages([]); setConfirmed(false); requests.current = {}; root.current = seriesId || null;
+    void extract(chosen);
   };
-  const extract = async () => {
+  const extract = async (selectedFiles = files) => {
+    if (busy || locked || !selectedFiles.length) return;
     setBusy(true); setError(''); setRows([]); setMessages([]); setConfirmed(false);
     const extracted = [], notices = [], hashes = new Set(), identities = new Set();
     let failed = 0;
     try {
-      for (const [index, file] of files.entries()) {
-        setMessages([...notices, `Reading ${index + 1} of ${files.length}: ${file.name}`]);
+      for (const [index, file] of selectedFiles.entries()) {
+        setProgress(`Reading ${index + 1} of ${selectedFiles.length}: ${file.name}`);
+        setMessages([...notices, `Reading ${index + 1} of ${selectedFiles.length}: ${file.name}`]);
         try {
           const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
           const hash = [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('');
@@ -62,7 +66,7 @@ export default function BulkDocumentUpload({ company, seriesId, onComplete }) {
       setRows(extracted); setMessages(notices);
       if (failed && extracted.length) setError(`${failed} file(s) could not be extracted. Review the file warnings; only successfully extracted, selected rows can be saved.`);
       if (!extracted.length) setError('No activity values were extracted. Check the file messages or enter numbers manually.');
-    } finally { setBusy(false); }
+    } finally { setBusy(false); setProgress(''); }
   };
   const update = (id, change) => { setRows(previous => previous.map(row => row.id === id ? { ...row, ...change } : row)); setConfirmed(false); };
   const save = async () => {
@@ -94,7 +98,8 @@ export default function BulkDocumentUpload({ company, seriesId, onComplete }) {
     <div className="document-drop" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); choose(event.dataTransfer.files); }}>
       <input ref={input} type="file" multiple accept=".pdf,.xlsx,.csv" aria-label="Select multiple company activity documents" disabled={busy || locked} onChange={event => choose(event.target.files)}/>
       <p>{files.length ? `${files.length} files selected` : 'Drop annual company documents here'}</p><span>Up to 10 files · 100 MB total per batch · Text-based PDF, XLSX or CSV</span>
-      <div className="document-buttons"><button type="button" className="carbonai-secondary" disabled={busy || locked} onClick={() => input.current.click()}>Choose files</button><button type="button" className="carbonai-primary" disabled={!files.length || busy || locked} onClick={extract}>{busy ? 'Reading files…' : 'Extract and group by year'}</button></div>
+      <div className="document-buttons"><button type="button" className="carbonai-secondary" disabled={busy || locked} onClick={() => input.current.click()}>Choose files</button>{files.length > 0 && !busy && <button type="button" className="carbonai-secondary" disabled={locked} onClick={() => extract()}>Retry extraction</button>}</div>
+      <p role="status" aria-live="polite" className="document-message">{busy ? `${progress || 'Starting extraction…'} Review will appear below when all files finish.` : rows.length ? `${rows.length} values extracted. Next: review the rows below, confirm annual totals, then save your assessments.` : 'Choose your files to start extraction automatically. You will review the values before anything is saved.'}</p>
       <ul>{files.map((file, index) => <li key={index}>{file.name}</li>)}</ul>
     </div>
     <p className="document-privacy">Extracted text is sent to our cloud AI provider. Files are not retained. Years suggested from activity evidence or document context must be confirmed. Files containing several years can be split by assigning each row separately.</p>
